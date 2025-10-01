@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [ "master"]
+  pull_request:
+    branches: [ "master"]
+
+jobs:
+  checks:
+    name: Lint, Format & Security
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Run quick-test (format + validate)
+        run: make quick-test
+
+      - name: Run tfsec (security scan)
+        uses: aquasecurity/tfsec-action@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload quick-test log
+        if: always()
+        run: |
+          mkdir -p .github/artifacts || true
+          echo "quick-test finished" > .github/artifacts/quick-test.txt

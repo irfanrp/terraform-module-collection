@@ -1,0 +1,81 @@
+name: PR Assistant
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  summarize:
+    name: Summarize PR and give suggestions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Generate diff
+        id: gitdiff
+        run: |
+          git fetch origin ${{ github.event.pull_request.base.ref }}
+          git diff --no-color origin/${{ github.event.pull_request.base.ref }}...HEAD > pr.diff || true
+          echo "::set-output name=diff::$(sed 's/%/%%/g' pr.diff | head -c 64000)"
+
+      - name: Call OpenAI to summarize (requires OPENAI_API_KEY)
+        if: ${{ secrets.OPENAI_API_KEY != '' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install deps and run PR summarizer
+        if: ${{ secrets.OPENAI_API_KEY != '' }}
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          cat > pr-summarizer.js <<'NODE'
+          const fs = require('fs');
+          const cp = require('child_process');
+          const fetch = require('node-fetch');
+
+          const diff = fs.readFileSync('pr.diff', 'utf8');
+          const prompt = `You are an expert Terraform reviewer. Summarize the following diff and list 3 actionable suggestions (security, best-practices, docs):\n\n${diff}`;
+
+          async function run(){
+            const res = await fetch('https://api.openai.com/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+              },
+              body: JSON.stringify({
+                model: 'gpt-4o-mini',
+                messages: [{role: 'user', content: prompt}],
+                max_tokens: 800
+              })
+            });
+            const j = await res.json();
+            const text = j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content ? j.choices[0].message.content : JSON.stringify(j);
+
+            // Post comment
+            const comment = `### AI PR Summary\n\n${text}`;
+            const ghRes = await fetch(`https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/issues/${process.env.PR_NUMBER}/comments`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `token ${process.env.GITHUB_TOKEN}`
+              },
+              body: JSON.stringify({ body: comment })
+            });
+            console.log('Posted comment status', ghRes.status);
+          }
+
+          run().catch(e=>{ console.error(e); process.exit(1); });
+          NODE
+
+          npm init -y >/dev/null
+          npm i node-fetch@2 >/dev/null
+          node pr-summarizer.js
