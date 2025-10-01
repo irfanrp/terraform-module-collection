@@ -22,10 +22,18 @@ jobs:
 
       - name: Install tfsec
         run: |
-          echo "Installing tfsec..."
-          curl -sSL "https://github.com/aquasecurity/tfsec/releases/latest/download/tfsec-linux-amd64.tar.gz" | tar xz -C /tmp
-          sudo mv /tmp/tfsec /usr/local/bin/tfsec
-          tfsec --version
+          echo "Installing tfsec using official install script..."
+          # Use the official install script which handles OS/ARCH and placement
+          curl -sSL "https://raw.githubusercontent.com/aquasecurity/tfsec/master/scripts/install_linux.sh" | sudo bash
+          # Try common locations if not on PATH yet
+          if command -v tfsec >/dev/null 2>&1; then
+            tfsec --version
+          elif [ -x "$HOME/.local/bin/tfsec" ]; then
+            $HOME/.local/bin/tfsec --version
+          else
+            echo "tfsec not found after install" >&2
+            exit 1
+          fi
 
       - name: Run tfsec (security scan)
         run: |
