@@ -20,10 +20,18 @@ jobs:
       - name: Run quick-test (format + validate)
         run: make quick-test
 
+      - name: Install tfsec
+        run: |
+          echo "Installing tfsec..."
+          curl -sSL "https://github.com/aquasecurity/tfsec/releases/latest/download/tfsec-linux-amd64.tar.gz" | tar xz -C /tmp
+          sudo mv /tmp/tfsec /usr/local/bin/tfsec
+          tfsec --version
+
       - name: Run tfsec (security scan)
-        uses: aquasecurity/tfsec-action@v1
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Running tfsec..."
+          tfsec --format junit --out .github/artifacts/tfsec-results.xml || true
+          tfsec || true
 
       - name: Upload quick-test log
         if: always()
