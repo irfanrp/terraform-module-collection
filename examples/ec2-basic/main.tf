@@ -74,14 +74,18 @@ resource "aws_security_group" "web" {
 module "ec2" {
   source = "../../modules/ec2"
 
-  name                = "web"
-  instance_count      = 2
-  ami_id              = data.aws_ami.amazon_linux.id
-  instance_type       = var.instance_type
-  subnet_ids          = module.vpc.public_subnet_ids
-  security_group_ids  = [aws_security_group.web.id]
-  associate_public_ip = true
-  ebs_volume_size     = 12
+  name                        = "web"
+  instance_count              = 2
+  ami_id                      = data.aws_ami.amazon_linux.id
+  instance_type               = var.instance_type
+  subnet_ids                  = module.vpc.public_subnet_ids
+  security_group_ids          = [aws_security_group.web.id]
+  associate_public_ip         = true
+  ebs_volume_size             = 12
+  create_ssm_instance_profile = true  # Enable SSM access
+  enable_cloudwatch_logs      = true  # Enable CloudWatch logs
+  enable_cloudwatch_metrics   = true  # Enable CloudWatch metrics
+  user_data                   = file("${path.module}/user-data.sh")  # Custom user data
 
   tags = {
     Environment = var.environment
@@ -90,13 +94,36 @@ module "ec2" {
 }
 
 output "instance_ids" {
-  value = module.ec2.instance_ids
+  description = "IDs of the EC2 instances"
+  value       = module.ec2.instance_ids
 }
 
 output "public_ips" {
-  value = module.ec2.public_ips
+  description = "Public IPs of the instances"
+  value       = module.ec2.public_ips
 }
 
 output "private_ips" {
-  value = module.ec2.private_ips
+  description = "Private IPs of the instances"
+  value       = module.ec2.private_ips
+}
+
+output "ssm_instance_profile_name" {
+  description = "Name of the SSM instance profile"
+  value       = module.ec2.ssm_instance_profile_name
+}
+
+output "ssm_role_arn" {
+  description = "ARN of the SSM IAM role"
+  value       = module.ec2.ssm_role_arn
+}
+
+output "availability_zones" {
+  description = "Availability zones where instances are deployed"
+  value       = module.ec2.availability_zones
+}
+
+output "web_urls" {
+  description = "URLs to access the web server on each instance"
+  value       = [for ip in module.ec2.public_ips : "http://${ip}"]
 }

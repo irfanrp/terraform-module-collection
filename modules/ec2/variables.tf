@@ -49,6 +49,76 @@ variable "enable_detailed_monitoring" {
   default     = false
 }
 
+variable "create_ssm_instance_profile" {
+  description = "Whether to create and attach SSM instance profile"
+  type        = bool
+  default     = true
+}
+
+variable "ssm_instance_profile_name" {
+  description = "Name for the SSM instance profile (optional, will be auto-generated if not provided)"
+  type        = string
+  default     = null
+}
+
+variable "key_name" {
+  description = "Name of the AWS key pair for SSH access"
+  type        = string
+  default     = null
+}
+
+variable "user_data" {
+  description = "User data script to run on instance startup"
+  type        = string
+  default     = null
+}
+
+variable "user_data_base64" {
+  description = "Base64 encoded user data script"
+  type        = string
+  default     = null
+}
+
+variable "disable_api_termination" {
+  description = "Enable EC2 instance termination protection"
+  type        = bool
+  default     = false
+}
+
+variable "enable_cloudwatch_logs" {
+  description = "Enable CloudWatch logs agent permissions"
+  type        = bool
+  default     = true
+}
+
+variable "enable_cloudwatch_metrics" {
+  description = "Enable CloudWatch custom metrics permissions"
+  type        = bool
+  default     = true
+}
+
+variable "additional_iam_policies" {
+  description = "List of additional IAM policy ARNs to attach to the instance role"
+  type        = list(string)
+  default     = []
+}
+
+variable "placement_group" {
+  description = "Placement group for the instances"
+  type        = string
+  default     = null
+}
+
+variable "tenancy" {
+  description = "Tenancy of the instance (default, dedicated, host)"
+  type        = string
+  default     = "default"
+  validation {
+    condition     = contains(["default", "dedicated", "host"], var.tenancy)
+    error_message = "Tenancy must be one of: default, dedicated, host."
+  }
+}
+
 variable "tags" {
   description = "Tags to apply to resources"
   type        = map(string)

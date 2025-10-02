@@ -1,31 +1,71 @@
 # EC2 Module
 
-Terraform module to deploy one or more EC2 instances with optional Elastic IPs.
+Terraform module to deploy one or more EC2 instances with optional Elastic IPs and SSM support.
 
 ## Features
 - Multiple instances with round-robin subnet placement
 - Optional Elastic IP association
 - Encrypted gp3 root volume (size configurable)
 - Optional detailed monitoring
+- **SSM (Systems Manager) support with automatic IAM role creation**
+- **Public IP association control**
+- **CloudWatch Logs and Metrics integration**
+- **User data script support (plain text or base64)**
+- **SSH Key pair support**
+- **Instance termination protection**
+- **Custom IAM policies attachment**
+- **Placement group and tenancy control**
 - Tag merging & consistent naming
 
 ## Usage
 ```hcl
+# Basic usage
 module "ec2" {
   source = "./modules/ec2"
 
-  name              = "web"
-  instance_count    = 2
-  ami_id            = data.aws_ami.amazon_linux.id
-  instance_type     = "t3.micro"
-  subnet_ids        = module.vpc.public_subnet_ids
-  security_group_ids = [aws_security_group.web.id]
-  associate_public_ip = true
-  ebs_volume_size     = 16
+  name                        = "web"
+  instance_count              = 2
+  ami_id                      = data.aws_ami.amazon_linux.id
+  instance_type               = "t3.micro"
+  subnet_ids                  = module.vpc.public_subnet_ids
+  security_group_ids          = [aws_security_group.web.id]
+  associate_public_ip         = true
+  ebs_volume_size             = 16
+  create_ssm_instance_profile = true  # Enable SSM access
+  ssm_instance_profile_name   = "custom-ssm-profile"  # Optional custom name
 
   tags = {
     Environment = "dev"
     Project     = "demo"
+  }
+}
+
+# Advanced usage with user data and additional features
+module "ec2_advanced" {
+  source = "./modules/ec2"
+
+  name                        = "app-server"
+  instance_count              = 1
+  ami_id                      = data.aws_ami.ubuntu.id
+  instance_type               = "t3.small"
+  subnet_ids                  = module.vpc.private_subnet_ids
+  security_group_ids          = [aws_security_group.app.id]
+  associate_public_ip         = false
+  key_name                    = "my-key-pair"
+  user_data                   = file("${path.module}/user-data/setup.sh")
+  disable_api_termination     = true
+  enable_cloudwatch_logs      = true
+  enable_cloudwatch_metrics   = true
+  
+  additional_iam_policies = [
+    "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess",
+    aws_iam_policy.custom_policy.arn
+  ]
+
+  tags = {
+    Environment = "production"
+    Project     = "my-app"
+    Backup      = "daily"
   }
 }
 ```
@@ -42,6 +82,17 @@ module "ec2" {
 | security_group_ids | List of security group IDs to attach | list(string) | [] | no |
 | ebs_volume_size | Root EBS volume size in GB | number | 8 | no |
 | enable_detailed_monitoring | Enable detailed monitoring (CloudWatch) | bool | false | no |
+| create_ssm_instance_profile | Whether to create and attach SSM instance profile | bool | true | no |
+| ssm_instance_profile_name | Name for the SSM instance profile (optional, will be auto-generated if not provided) | string | null | no |
+| key_name | Name of the AWS key pair for SSH access | string | null | no |
+| user_data | User data script to run on instance startup | string | null | no |
+| user_data_base64 | Base64 encoded user data script | string | null | no |
+| disable_api_termination | Enable EC2 instance termination protection | bool | false | no |
+| enable_cloudwatch_logs | Enable CloudWatch logs agent permissions | bool | true | no |
+| enable_cloudwatch_metrics | Enable CloudWatch custom metrics permissions | bool | true | no |
+| additional_iam_policies | List of additional IAM policy ARNs to attach to the instance role | list(string) | [] | no |
+| placement_group | Placement group for the instances | string | null | no |
+| tenancy | Tenancy of the instance (default, dedicated, host) | string | "default" | no |
 | tags | Tags to apply to resources | map(string) | {} | no |
 
 ## Outputs
@@ -51,11 +102,40 @@ module "ec2" {
 | public_ips | Public IPs (if associated) |
 | private_ips | Private IPs of the instances |
 | arns | Instance ARNs |
+| ssm_instance_profile_name | Name of the SSM instance profile |
+| ssm_instance_profile_arn | ARN of the SSM instance profile |
+| ssm_role_arn | ARN of the SSM IAM role |
+| availability_zones | Availability zones where instances are deployed |
+| subnet_ids | Subnet IDs where instances are deployed |
+| key_name | Key pair name used for instances |
+
+## User Data Examples
+
+The module includes example user data scripts in the `user-data-examples/` directory:
+
+- `amazon-linux-setup.sh` - Sets up Apache web server with CloudWatch agent on Amazon Linux 2023
+- `ubuntu-setup.sh` - Sets up Nginx web server with CloudWatch agent on Ubuntu
+
+Usage:
+```hcl
+module "ec2" {
+  source = "./modules/ec2"
+  
+  # ... other variables ...
+  
+  user_data = file("${path.module}/modules/ec2/user-data-examples/amazon-linux-setup.sh")
+}
+```
 
 ## Notes
 - Ensure the AMI you reference is available in the selected region.
 - When using Elastic IPs, AWS limits may apply.
+- **SSM support**: The module automatically creates an IAM role with `AmazonSSMManagedInstanceCore` policy attached, allowing you to connect to instances via AWS Systems Manager Session Manager without SSH keys.
+- **Public IP control**: Use `associate_public_ip` parameter to control whether instances get public IPs assigned.
+- **CloudWatch integration**: When enabled, instances get permissions to send logs and custom metrics to CloudWatch.
+- **User data**: You can provide either plain text user data or base64 encoded user data, but not both.
+- **Termination protection**: Enable `disable_api_termination` for production instances to prevent accidental termination.
 - For production, consider adding:
-  - SSM agent access / IAM role
-  - CloudWatch log/metric agents
   - Auto scaling groups instead of static count
+  - Additional IAM policies as needed
+  - Backup strategies for EBS volumes
