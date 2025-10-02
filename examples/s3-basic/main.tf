@@ -1,0 +1,35 @@
+terraform {
+  required_version = ">= 1.0"
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+
+provider "aws" {
+  region = var.aws_region
+}
+
+module "s3" {
+  source = "../../modules/s3"
+
+  bucket_name = "tf-module-collection-example-bucket-${var.env_suffix}"
+  acl         = "private"
+
+  versioning_enabled             = true
+  server_side_encryption_enabled = true
+  sse_algorithm                  = "AES256"
+
+  logging_enabled = false
+
+  tags = {
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}
+
+output "bucket_id" {
+  value = module.s3.bucket_id
+}

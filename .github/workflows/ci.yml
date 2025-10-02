@@ -20,26 +20,79 @@ jobs:
       - name: Run quick-test (format + validate)
         run: make quick-test
 
-      - name: Install tfsec
+      - name: Install tfsec (Linux)
+        if: runner.os == 'Linux'
         run: |
-          echo "Installing tfsec using official install script..."
-          # Use the official install script which handles OS/ARCH and placement
-          curl -sSL "https://raw.githubusercontent.com/aquasecurity/tfsec/master/scripts/install_linux.sh" | sudo bash
-          # Try common locations if not on PATH yet
-          if command -v tfsec >/dev/null 2>&1; then
-            tfsec --version
-          elif [ -x "$HOME/.local/bin/tfsec" ]; then
-            $HOME/.local/bin/tfsec --version
-          else
-            echo "tfsec not found after install" >&2
-            exit 1
-          fi
+          set -e
+          echo "Installing tfsec (linux) via release binary..."
+          LATEST_URL="https://github.com/aquasecurity/tfsec/releases/latest/download/tfsec-linux-amd64"
+          curl -sSL "$LATEST_URL" -o /usr/local/bin/tfsec
+          chmod +x /usr/local/bin/tfsec
+          tfsec --version
+
+      - name: Install tfsec (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          echo "Installing tfsec via Homebrew..."
+          brew install tfsec || brew upgrade tfsec || true
+          tfsec --version
 
       - name: Run tfsec (security scan)
         run: |
-          echo "Running tfsec..."
+          echo "Running tfsec on repository..."
+          mkdir -p .github/artifacts
           tfsec --format junit --out .github/artifacts/tfsec-results.xml || true
           tfsec || true
+
+      - name: Upload tfsec result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfsec-results
+          path: .github/artifacts/tfsec-results.xml
+
+      - name: Install tflint
+        run: |
+          echo "Installing tflint..."
+          curl -sSL https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash -s -- -b /usr/local/bin
+          tflint --version || true
+
+      - name: Run tflint
+        run: |
+          echo "Running tflint..."
+          mkdir -p .github/artifacts
+          # Initialize tflint (plugins) if .tflint.hcl references them
+          tflint --init || true
+          tflint --format junit --out .github/artifacts/tflint-results.xml || true
+          tflint || true
+
+      - name: Upload tflint result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tflint-results
+          path: .github/artifacts/tflint-results.xml
+
+      - name: Install Checkov
+        run: |
+          echo "Installing Checkov..."
+          python3 -m pip install --upgrade pip
+          python3 -m pip install checkov
+          checkov --version || true
+
+      - name: Run Checkov (Terraform)
+        run: |
+          echo "Running Checkov on Terraform files..."
+          mkdir -p .github/artifacts
+          # Run checkov scanning only terraform files in repository
+          checkov -d . -o junitxml > .github/artifacts/checkov-results.xml || true
+
+      - name: Upload Checkov result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: checkov-results
+          path: .github/artifacts/checkov-results.xml
 
       - name: Upload quick-test log
         if: always()
