@@ -30,6 +30,12 @@ module "s3" {
   }
 }
 
-output "bucket_id" {
-  value = module.s3.bucket_id
+output "bucket_ids" {
+  description = "Map of bucket name -> bucket id"
+  value       = module.s3.bucket_ids
+}
+
+output "bucket_arns" {
+  description = "Map of bucket name -> bucket arn"
+  value       = module.s3.bucket_arns
 }

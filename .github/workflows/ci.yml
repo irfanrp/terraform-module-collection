@@ -63,7 +63,9 @@ jobs:
           mkdir -p .github/artifacts
           # Initialize tflint (plugins) if .tflint.hcl references them
           tflint --init || true
-          tflint --format junit --out .github/artifacts/tflint-results.xml || true
+          # tflint doesn't support --out; capture junit XML from stdout
+          tflint --format junit > .github/artifacts/tflint-results.xml || true
+          # Run tflint again to show human-readable output (optional)
           tflint || true
 
       - name: Upload tflint result

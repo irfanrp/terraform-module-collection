@@ -1,12 +1,19 @@
 variable "bucket_name" {
-  description = "Name of the S3 bucket"
+  description = "Name of the S3 bucket (for single-bucket usage). If you want to create multiple buckets, use `bucket_names` instead."
   type        = string
+  default     = ""
+}
+
+variable "bucket_names" {
+  description = "List of S3 bucket names to create. When provided, the module will create one bucket per name. If empty, `bucket_name` will be used (if set)."
+  type        = list(string)
+  default     = []
 }
 
 variable "acl" {
-  description = "Canned ACL for the bucket"
+  description = "Canned ACL for the bucket. Leave empty (null) to avoid setting an ACL on the bucket (recommended)."
   type        = string
-  default     = "private"
+  default     = null
 }
 
 variable "force_destroy" {
@@ -114,6 +121,18 @@ variable "logging_target_prefix" {
 
 variable "deny_insecure_transport" {
   description = "Add a bucket policy to deny requests that do not use TLS"
+  type        = bool
+  default     = true
+}
+
+variable "bucket_policies" {
+  description = "Map of bucket name -> bucket policy (JSON string). If provided, the policy will be attached to the corresponding bucket. Use jsonencode() to build policies from HCL objects."
+  type        = map(string)
+  default     = {}
+}
+
+variable "attach_bucket_policies" {
+  description = "Whether to attach user-provided bucket policies from `bucket_policies`. Set to false to skip attaching them."
   type        = bool
   default     = true
 }
