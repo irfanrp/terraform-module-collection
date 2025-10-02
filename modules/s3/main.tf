@@ -3,13 +3,13 @@ locals {
 }
 
 locals {
-  common_tags = { }
+  common_tags = {}
 }
 
 # Validation using expressions: fail early with clear messages
 locals {
-  validated_names = length(local.names) > 0 ? local.names : error("You must provide at least one bucket name via 'bucket_name' or 'bucket_names'.")
-  unknown_policy_keys = length(var.bucket_policies) > 0 ? setsubtract(keys(var.bucket_policies), local.validated_names) : []
+  validated_names        = length(local.names) > 0 ? local.names : error("You must provide at least one bucket name via 'bucket_name' or 'bucket_names'.")
+  unknown_policy_keys    = length(var.bucket_policies) > 0 ? setsubtract(keys(var.bucket_policies), local.validated_names) : []
   _check_bucket_policies = length(local.unknown_policy_keys) == 0 ? true : error("All keys in 'bucket_policies' must match a created bucket name (one of: ${join(", ", local.validated_names)})")
 }
 
