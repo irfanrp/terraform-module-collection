@@ -49,5 +49,5 @@ variable "ssh_public_key" {
 variable "allowed_ssh_cidr_blocks" {
   description = "CIDR blocks allowed to SSH to bastion host"
   type        = list(string)
-  default     = ["0.0.0.0/0"]  # Replace with your IP range for security
+  default     = ["0.0.0.0/0"] # Replace with your IP range for security
 }

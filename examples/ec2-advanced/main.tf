@@ -33,7 +33,7 @@ module "vpc" {
   name               = var.vpc_name
   cidr_block         = var.vpc_cidr
   availability_zones = var.availability_zones
-  enable_nat_gateway = true  # Enable NAT for private subnets
+  enable_nat_gateway = true # Enable NAT for private subnets
 
   tags = {
     Environment = var.environment
@@ -110,7 +110,7 @@ resource "aws_iam_policy" "s3_access" {
 # Key pair for SSH access (optional)
 resource "aws_key_pair" "app_key" {
   key_name   = "${var.vpc_name}-app-key"
-  public_key = var.ssh_public_key  # You need to provide this variable
+  public_key = var.ssh_public_key # You need to provide this variable
 
   tags = {
     Environment = var.environment
@@ -133,21 +133,21 @@ resource "aws_placement_group" "app_cluster" {
 module "ec2_advanced" {
   source = "../../modules/ec2"
 
-  name                        = "app-server"
-  instance_count              = 3
-  ami_id                      = data.aws_ami.ubuntu.id
-  instance_type               = var.instance_type
-  subnet_ids                  = module.vpc.private_subnet_ids  # Using private subnets
-  security_group_ids          = [aws_security_group.app.id]
-  associate_public_ip         = false  # No public IP for security
-  key_name                    = aws_key_pair.app_key.key_name
-  user_data                   = file("${path.module}/user-data-advanced.sh")
-  disable_api_termination     = true   # Production protection
-  enable_detailed_monitoring  = true   # Detailed CloudWatch monitoring
-  enable_cloudwatch_logs      = true
-  enable_cloudwatch_metrics   = true
-  placement_group             = aws_placement_group.app_cluster.name
-  
+  name                       = "app-server"
+  instance_count             = 3
+  ami_id                     = data.aws_ami.ubuntu.id
+  instance_type              = var.instance_type
+  subnet_ids                 = module.vpc.private_subnet_ids # Using private subnets
+  security_group_ids         = [aws_security_group.app.id]
+  associate_public_ip        = false # No public IP for security
+  key_name                   = aws_key_pair.app_key.key_name
+  user_data                  = file("${path.module}/user-data-advanced.sh")
+  disable_api_termination    = true # Production protection
+  enable_detailed_monitoring = true # Detailed CloudWatch monitoring
+  enable_cloudwatch_logs     = true
+  enable_cloudwatch_metrics  = true
+  placement_group            = aws_placement_group.app_cluster.name
+
   # Additional IAM policies
   additional_iam_policies = [
     "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess",
@@ -178,7 +178,7 @@ module "ec2_bastion" {
   associate_public_ip         = true
   key_name                    = aws_key_pair.app_key.key_name
   create_ssm_instance_profile = true
-  enable_cloudwatch_logs      = false  # Minimal logging for bastion
+  enable_cloudwatch_logs      = false # Minimal logging for bastion
   enable_cloudwatch_metrics   = false
 
   tags = {

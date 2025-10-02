@@ -82,10 +82,10 @@ module "ec2" {
   security_group_ids          = [aws_security_group.web.id]
   associate_public_ip         = true
   ebs_volume_size             = 12
-  create_ssm_instance_profile = true  # Enable SSM access
-  enable_cloudwatch_logs      = true  # Enable CloudWatch logs
-  enable_cloudwatch_metrics   = true  # Enable CloudWatch metrics
-  user_data                   = file("${path.module}/user-data.sh")  # Custom user data
+  create_ssm_instance_profile = true                                # Enable SSM access
+  enable_cloudwatch_logs      = true                                # Enable CloudWatch logs
+  enable_cloudwatch_metrics   = true                                # Enable CloudWatch metrics
+  user_data                   = file("${path.module}/user-data.sh") # Custom user data
 
   tags = {
     Environment = var.environment
