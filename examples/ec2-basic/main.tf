@@ -28,7 +28,7 @@ data "aws_ami" "amazon_linux" {
 }
 
 module "vpc" {
-  source = "../../modules/vpc"
+  source             = "../../modules/vpc"
   name               = var.vpc_name
   cidr_block         = var.vpc_cidr
   availability_zones = var.availability_zones
