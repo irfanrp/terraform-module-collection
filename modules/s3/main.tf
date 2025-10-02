@@ -1,10 +1,21 @@
 locals {
-  common_tags = merge(var.tags, { Name = var.bucket_name })
+  names = length(var.bucket_names) > 0 ? var.bucket_names : (var.bucket_name != "" ? [var.bucket_name] : [])
+}
+
+locals {
+  common_tags = { }
+}
+
+# Validation using expressions: fail early with clear messages
+locals {
+  validated_names = length(local.names) > 0 ? local.names : error("You must provide at least one bucket name via 'bucket_name' or 'bucket_names'.")
+  unknown_policy_keys = length(var.bucket_policies) > 0 ? setsubtract(keys(var.bucket_policies), local.validated_names) : []
+  _check_bucket_policies = length(local.unknown_policy_keys) == 0 ? true : error("All keys in 'bucket_policies' must match a created bucket name (one of: ${join(", ", local.validated_names)})")
 }
 
 resource "aws_s3_bucket" "this" {
-  bucket        = var.bucket_name
-  acl           = var.acl
+  for_each      = toset(local.names)
+  bucket        = each.value
   force_destroy = var.force_destroy
 
   dynamic "versioning" {
@@ -71,13 +82,21 @@ resource "aws_s3_bucket" "this" {
     }
   }
 
-  tags = local.common_tags
+  tags = merge(var.tags, { Name = each.value })
+}
+
+# Create bucket ACL resource if user provided an acl (avoid using deprecated `acl` argument on aws_s3_bucket)
+resource "aws_s3_bucket_acl" "this" {
+  for_each = var.acl != null ? aws_s3_bucket.this : {}
+
+  bucket = each.value.id
+  acl    = var.acl
 }
 
 resource "aws_s3_bucket_public_access_block" "this" {
-  count = var.enable_public_access_block ? 1 : 0
+  for_each = var.enable_public_access_block ? aws_s3_bucket.this : {}
 
-  bucket = aws_s3_bucket.this.id
+  bucket = each.value.id
 
   block_public_acls       = var.block_public_acls
   block_public_policy     = var.block_public_policy
@@ -87,8 +106,8 @@ resource "aws_s3_bucket_public_access_block" "this" {
 
 # Optionally create a bucket policy to enforce TLS and deny public (if requested)
 resource "aws_s3_bucket_policy" "deny_insecure_transport" {
-  count  = var.deny_insecure_transport ? 1 : 0
-  bucket = aws_s3_bucket.this.id
+  for_each = var.deny_insecure_transport ? aws_s3_bucket.this : {}
+  bucket   = each.value.id
 
   policy = jsonencode({
     Version = "2012-10-17",
@@ -99,8 +118,8 @@ resource "aws_s3_bucket_policy" "deny_insecure_transport" {
         Principal = "*",
         Action    = "s3:*",
         Resource = [
-          "${aws_s3_bucket.this.arn}",
-          "${aws_s3_bucket.this.arn}/*"
+          "${each.value.arn}",
+          "${each.value.arn}/*"
         ],
         Condition = {
           Bool = { "aws:SecureTransport" = false }
@@ -108,4 +127,12 @@ resource "aws_s3_bucket_policy" "deny_insecure_transport" {
       }
     ]
   })
+}
+
+# Attach user-provided policies per bucket
+resource "aws_s3_bucket_policy" "custom_policies" {
+  for_each = var.attach_bucket_policies ? { for k, v in var.bucket_policies : k => v if contains(keys(aws_s3_bucket.this), k) } : {}
+
+  bucket = aws_s3_bucket.this[each.key].id
+  policy = each.value
 }
