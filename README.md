@@ -32,6 +32,7 @@ terraform-modules/
 | [RDS](./modules/rds/) | Relational Database Service | 📋 Planned |
 | [S3](./modules/s3/) | Simple Storage Service | 📋 Planned |
 | [IAM](./modules/iam/) | Identity and Access Management | 📋 Planned |
+| [EC2](./modules/ec2/) | Elastic Compute Cloud Instances | ✅ Ready |
 
 ## Quick Start
 
@@ -53,6 +54,9 @@ module "vpc" {
 ```
 
 ### Using Examples
+
+Additional example directories:
+- `examples/ec2-basic` (launch EC2 instances using VPC module)
 
 **Real AWS (needs credentials):**
 ```bash
