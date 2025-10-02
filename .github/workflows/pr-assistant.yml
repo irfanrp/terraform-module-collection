@@ -27,23 +27,25 @@ jobs:
           git diff --no-color origin/${{ github.event.pull_request.base.ref }}...HEAD > pr.diff || true
           echo "::set-output name=diff::$(sed 's/%/%%/g' pr.diff | head -c 64000)"
 
-      - name: Call OpenAI to summarize (requires OPENAI_API_KEY)
-        if: ${{ secrets.OPENAI_API_KEY != '' }}
+      - name: Setup Node (for OpenAI call)
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Install deps and run PR summarizer
-        if: ${{ secrets.OPENAI_API_KEY != '' }}
+      - name: Install deps and run PR summarizer (skips if OPENAI_API_KEY not set)
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          SECRET_GITHUB: ${{ secrets.SECRET_GITHUB }}
+          SECRET_GITHUB: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           BASE_REF: ${{ github.event.pull_request.base.ref }}
         run: |
+          if [ -z "$OPENAI_API_KEY" ]; then
+            echo "OPENAI_API_KEY is not set — skipping AI summarization";
+            exit 0;
+          fi
+
           cat > pr-summarizer.js <<'NODE'
           const fs = require('fs');
-          const cp = require('child_process');
           const fetch = require('node-fetch');
 
           const diff = fs.readFileSync('pr.diff', 'utf8');
