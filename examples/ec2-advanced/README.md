@@ -4,13 +4,13 @@ This example demonstrates the full capabilities of the enhanced EC2 Terraform mo
 
 ## Features Demonstrated
 
-### 🏗️ Infrastructure
+### Infrastructure
 - **VPC with NAT Gateway** - Private subnets with internet access
 - **Placement Groups** - Cluster placement for high performance
 - **Multiple Availability Zones** - High availability deployment
 - **Security Groups** - Network-level security controls
 
-### 🛡️ Security
+### Security
 - **Private Subnet Deployment** - Instances not directly accessible from internet
 - **Bastion Host** - Secure SSH access through jump server
 - **Instance Termination Protection** - Prevents accidental termination
@@ -18,13 +18,13 @@ This example demonstrates the full capabilities of the enhanced EC2 Terraform mo
 - **UFW Firewall** - Host-level firewall configuration
 - **Fail2ban** - Intrusion prevention system
 
-### 📊 Monitoring & Observability
+### Monitoring & Observability
 - **Enhanced CloudWatch Monitoring** - Detailed metrics collection
 - **Custom CloudWatch Metrics** - CPU, memory, disk, network metrics
 - **Centralized Logging** - Application and system logs in CloudWatch
 - **Health Check Endpoints** - Application health monitoring
 
-### 🚀 Management
+### Management
 - **SSM Integration** - Secure shell access without SSH keys
 - **User Data Scripts** - Automated instance configuration
 - **Multiple Instance Types** - Application servers and bastion host

@@ -1,109 +1,101 @@
 # Terraform Module Collection
 
-**Acurated collection of reusable Terraform modules for AWS infrastructure**
+Reusable, well-documented Terraform modules for common AWS infrastructure patterns.
 
-## 📁 Structure
+Targets small teams and platform engineers who want composable building blocks (VPC, EC2, S3, IAM, etc.) with sensible defaults and production-ready options.
+
+--------------------------------------------------------------------------------
+
+## Repository layout
 
 ```
-terraform-modules/
-├── modules/
+.
+├── .github/                 # CI workflows
+├── examples/                # Opinionated example usages for modules
+├── modules/                 # Reusable terraform modules
+│   ├── ec2/
 │   ├── vpc/
-│   │   ├── main.tf
-│   │   ├── variables.tf
-│   │   ├── outputs.tf
-│   │   └── README.md
-│   ├── eks/
-│   ├── rds/
 │   ├── s3/
-│   └── iam/
-├── examples/
-│   ├── vpc-basic/
-│   ├── eks-basic/
 │   └── ...
-└── README.md
+├── Makefile                 # helpers (format, quick-test)
+├── README.md                # this file
+└── LICENSE
 ```
 
-## Available Modules
+## Modules (summary)
 
-| Module | Description | Status |
-|--------|-------------|--------|
-| [VPC](./modules/vpc/) | Virtual Private Cloud with subnets | ✅ Ready |
-| [EKS](./modules/eks/) | Elastic Kubernetes Service | 🚧 In Progress |
-| [RDS](./modules/rds/) | Relational Database Service | 📋 Planned |
-| [S3](./modules/s3/) | Simple Storage Service | 📋 Planned |
-| [IAM](./modules/iam/) | Identity and Access Management | 📋 Planned |
-| [EC2](./modules/ec2/) | Elastic Compute Cloud Instances | ✅ Ready |
+| Module | Purpose | Status |
+|--------|---------|:-----:|
+| `vpc`  | VPC, subnets, route tables, NAT | ✅ Ready |
+| `ec2`  | EC2 instances (SSM, CloudWatch, user-data) | ✅ Ready |
+| `s3`   | S3 buckets: multi-bucket support, encryption, lifecycle, policies | ✅ Ready |
+| `eks`  | EKS cluster (work in progress) | 🚧 In Progress |
+| `rds`  | RDS databases (planned) | 📋 Planned |
+| `iam`  | Reusable IAM role/policy helpers | 📋 Planned |
 
-## Quick Start
+See module READMEs for full input/output details (`modules/<name>/README.md`).
 
-### Using VPC Module
+## Quick start
 
-```hcl
-module "vpc" {
-  source = "./modules/vpc"
-  
-  name               = "my-vpc"
-  cidr_block         = "10.0.0.0/16"
-  availability_zones = ["us-west-2a", "us-west-2b"]
-  
-  tags = {
-    Environment = "dev"
-    Project     = "my-project"
-  }
-}
-```
+Clone the repo and try an example (this will use your AWS credentials):
 
-### Using Examples
-
-Additional example directories:
-- `examples/ec2-basic` (launch EC2 instances using VPC module)
-
-**Real AWS (needs credentials):**
 ```bash
-cd examples/vpc-basic
+git clone <repo-url>
+cd Terraform-Module-Collection/examples/vpc-basic
 terraform init
-terraform plan
 terraform apply
 ```
 
-**Local Testing (no credentials needed):**
-```bash
-# Quick syntax check
-make quick-test
+For a quick local syntax check without touching AWS:
 
-# OR manually
-cd examples/vpc-syntax-check
-terraform init
-terraform validate
+```bash
+make quick-test   # runs fmt + validate across examples
 ```
 
-**LocalStack Testing (local AWS simulation):**
-```bash
-# Start LocalStack first
-localstack start
+## Examples
 
-# Then test
-make test-localstack
-```
+- `examples/vpc-basic` — minimal VPC
+- `examples/ec2-basic` — EC2 instances using the VPC module
+- `examples/s3-basic` — S3 example using the new multi-bucket S3 module
+- `examples/ec2-advanced` — advanced EC2 pattern (bastion, placement groups, monitoring)
 
-## 📋 Requirements
+## CI / Checks
 
-**For Real AWS:**
+The repository includes a GitHub Actions workflow (`.github/workflows/ci.yml`) which runs:
+
+- `terraform fmt` / `terraform validate` (quick-test)
+- `tfsec` (terraform security scanner)
+- `tflint` (Terraform linter)
+- `checkov` (policy-as-code checks)
+
+Artifacts (tfsec/tflint/checkov outputs) are uploaded for PR review.
+
+## Recommended local tools
+
 - Terraform >= 1.0
-- AWS Provider >= 4.0
-- AWS CLI configured
+- `tfsec`, `tflint` (optional: CI already runs them)
+- `jq` (for JSON policy checks)
+- `localstack` (if you want to run examples locally against a simulated AWS)
 
-**For Local Testing:**
-- Terraform >= 1.0 (only)
-- Optional: LocalStack for simulation
+## Development workflow
 
-## 🤝 Contributing
+1. Create a feature branch: `git checkout -b feature/xxxx`
+2. Implement module changes in `modules/<module>` and add/update examples in `examples/`
+3. Run `make quick-test` and `terraform validate` in examples
+4. Push branch and open a PR
 
-1. Fork the repository
-2. Create your feature branch
-3. Add tests for your changes
-4. Submit a pull request
+CI will run the linters and security checks automatically.
 
-## 📄 License
+## Roadmap ideas
 
-MIT License - see [LICENSE](LICENSE) file for details.
+- Cross-region replication and DR for S3
+- Test harness (terratest) for end-to-end validation
+- Publish modules to the Terraform Registry
+
+## Contributing
+
+Contributions welcome — please open an issue or PR. Follow the standard GitHub PR flow and include changes to examples and docs when adding features.
+
+## License
+
+MIT — see the `LICENSE` file for details.
