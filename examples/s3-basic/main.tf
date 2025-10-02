@@ -18,9 +18,9 @@ module "s3" {
   bucket_name = "tf-module-collection-example-bucket-${var.env_suffix}"
   acl         = "private"
 
-  versioning_enabled = true
+  versioning_enabled             = true
   server_side_encryption_enabled = true
-  sse_algorithm = "AES256"
+  sse_algorithm                  = "AES256"
 
   logging_enabled = false
 

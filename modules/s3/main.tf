@@ -59,7 +59,7 @@ resource "aws_s3_bucket" "this" {
       }
 
       abort_incomplete_multipart_upload_days = lookup(lifecycle_rule.value, "abort_incomplete_multipart_upload_days", null)
-      prefix = lookup(lifecycle_rule.value, "prefix", null)
+      prefix                                 = lookup(lifecycle_rule.value, "prefix", null)
     }
   }
 
@@ -87,17 +87,17 @@ resource "aws_s3_bucket_public_access_block" "this" {
 
 # Optionally create a bucket policy to enforce TLS and deny public (if requested)
 resource "aws_s3_bucket_policy" "deny_insecure_transport" {
-  count = var.deny_insecure_transport ? 1 : 0
+  count  = var.deny_insecure_transport ? 1 : 0
   bucket = aws_s3_bucket.this.id
 
   policy = jsonencode({
     Version = "2012-10-17",
     Statement = [
       {
-        Sid    = "DenyInsecureTransport",
-        Effect = "Deny",
+        Sid       = "DenyInsecureTransport",
+        Effect    = "Deny",
         Principal = "*",
-        Action = "s3:*",
+        Action    = "s3:*",
         Resource = [
           "${aws_s3_bucket.this.arn}",
           "${aws_s3_bucket.this.arn}/*"

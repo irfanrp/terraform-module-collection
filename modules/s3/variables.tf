@@ -42,11 +42,11 @@ variable "kms_key_id" {
 variable "lifecycle_rules" {
   description = "List of lifecycle rules"
   type = list(object({
-    id                                = optional(string)
-    enabled                           = optional(bool)
-    prefix                            = optional(string)
-    transitions                       = optional(list(object({ days = number, storage_class = string })), [])
-    expiration                        = optional(object({ days = number }), null)
+    id                                     = optional(string)
+    enabled                                = optional(bool)
+    prefix                                 = optional(string)
+    transitions                            = optional(list(object({ days = number, storage_class = string })), [])
+    expiration                             = optional(object({ days = number }), null)
     abort_incomplete_multipart_upload_days = optional(number)
   }))
   default = []
