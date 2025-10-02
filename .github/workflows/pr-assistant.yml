@@ -3,7 +3,14 @@ name: PR Assistant
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-  workflow_dispatch: {}
+    branches:
+      - master
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'Optional PR number for manual run (leave blank to only produce artifact)'
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -11,7 +18,9 @@ permissions:
 
 jobs:
   summarize:
-    name: Summarize PR and give suggestions
+    name: Summarize PR and give suggestions (feature/* -> master)
+    # Only run if base is master and head branch starts with feature/
+    if: github.event.pull_request.base.ref == 'master' && startsWith(github.head_ref, 'feature/')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -36,20 +45,25 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           SECRET_GITHUB: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
         run: |
+          set -e
           if [ -z "$OPENAI_API_KEY" ]; then
-            echo "OPENAI_API_KEY is not set — skipping AI summarization";
+            echo "[INFO] OPENAI_API_KEY not set — skipping AI summarization";
             exit 0;
           fi
+          echo "[INFO] Using PR_NUMBER='${PR_NUMBER}' (empty means artifact-only mode)."
+          echo "[INFO] Diff size: $(wc -c < pr.diff) bytes"
 
           cat > pr-summarizer.js <<'NODE'
           const fs = require('fs');
           const fetch = require('node-fetch');
 
-          const diff = fs.readFileSync('pr.diff', 'utf8');
-          const prompt = `You are an expert Terraform reviewer. Summarize the following diff and list 3 actionable suggestions (security, best-practices, docs):\n\n${diff}`;
+          const diff = fs.readFileSync('pr.diff','utf8');
+            // Truncate diff if huge
+          const truncated = diff.length > 60000 ? diff.slice(0,60000) + '\n...[truncated]...' : diff;
+          const prompt = `You are an expert Terraform reviewer. Summarize the following diff and list EXACTLY 3 actionable suggestions (security, best-practices, docs). Be concise.\n\n${truncated}`;
 
           async function run(){
             const res = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -61,15 +75,25 @@ jobs:
               body: JSON.stringify({
                 model: 'gpt-4o-mini',
                 messages: [{role: 'user', content: prompt}],
-                max_tokens: 800
+                max_tokens: 650,
+                temperature: 0.3
               })
             });
-            const j = await res.json();
-            const text = j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content ? j.choices[0].message.content : JSON.stringify(j);
-
-            // Post comment
-            const comment = `### AI PR Summary\n\n${text}`;
-            const ghRes = await fetch(`https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/issues/${process.env.PR_NUMBER}/comments`, {
+            const body = await res.json();
+            if(res.status >= 400){
+              console.error('OpenAI error', res.status, body);
+              fs.writeFileSync('ai-summary.md', 'OpenAI error '+res.status+'\n'+JSON.stringify(body,null,2));
+              return;
+            }
+            const text = body.choices?.[0]?.message?.content || JSON.stringify(body);
+            const prNumber = (process.env.PR_NUMBER||'').trim();
+            const comment = `### 🤖 AI PR Summary\n\n${text}\n\n---\n_Diff chars: ${diff.length} (truncated: ${diff.length !== truncated.length})_`;
+            fs.writeFileSync('ai-summary.md', comment);
+            if(!prNumber){
+              console.log('No PR number provided, skipping posting comment.');
+              return;
+            }
+            const ghRes = await fetch(`https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/issues/${prNumber}/comments`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -78,6 +102,9 @@ jobs:
               body: JSON.stringify({ body: comment })
             });
             console.log('Posted comment status', ghRes.status);
+            if(ghRes.status === 404){
+              console.warn('Received 404 – likely invalid PR or permissions.');
+            }
           }
 
           run().catch(e=>{ console.error(e); process.exit(1); });
@@ -86,3 +113,10 @@ jobs:
           npm init -y >/dev/null
           npm i node-fetch@2 >/dev/null
           node pr-summarizer.js
+
+      - name: Upload AI summary artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-summary
+          path: ai-summary.md
