@@ -1,18 +1,18 @@
 locals {
-  role_name_final = var.role_name != null ? var.role_name : (var.name_prefix == "" ? "iam-role" : format("%s%s", var.name_prefix, substr(md5(timestamp()),0,6)))
+  role_name_final = var.role_name != null ? var.role_name : (var.name_prefix == "" ? "iam-role" : format("%s%s", var.name_prefix, substr(md5(timestamp()), 0, 6)))
   assume_role_policy_calc = var.assume_role_policy != null ? var.assume_role_policy : jsonencode({
     Version = "2012-10-17"
     Statement = concat([
       for svc in var.assume_services : {
-        Effect = "Allow"
+        Effect    = "Allow"
         Principal = { Service = svc }
-        Action = "sts:AssumeRole"
+        Action    = "sts:AssumeRole"
       }
-    ], [
+      ], [
       for acct in var.cross_account_principals : {
-        Effect = "Allow"
+        Effect    = "Allow"
         Principal = { AWS = acct }
-        Action = "sts:AssumeRole"
+        Action    = "sts:AssumeRole"
       }
     ])
   })
@@ -23,8 +23,8 @@ locals {
   group_managed_list = flatten([
     for gname, g in var.groups : [
       for p in try(g.managed_policy_arns, []) : {
-        key = "${gname}::${replace(p, "/", "_") }"
-        group = gname
+        key        = "${gname}::${replace(p, "/", "_")}"
+        group      = gname
         policy_arn = p
       }
     ]
@@ -35,10 +35,10 @@ locals {
   group_inline_list = flatten([
     for gname, g in var.groups : [
       for pname, p in try(g.inline_policies, {}) : {
-        key = "${gname}::${pname}"
-        group = gname
+        key         = "${gname}::${pname}"
+        group       = gname
         policy_name = pname
-        policy = p
+        policy      = p
       }
     ]
   ])
@@ -48,8 +48,8 @@ locals {
   user_managed_list = flatten([
     for uname, u in var.users : [
       for p in try(u.managed_policy_arns, []) : {
-        key = "${uname}::${replace(p, "/", "_") }"
-        user = uname
+        key        = "${uname}::${replace(p, "/", "_")}"
+        user       = uname
         policy_arn = p
       }
     ]
@@ -60,10 +60,10 @@ locals {
   user_inline_list = flatten([
     for uname, u in var.users : [
       for pname, p in try(u.inline_policies, {}) : {
-        key = "${uname}::${pname}"
-        user = uname
+        key         = "${uname}::${pname}"
+        user        = uname
         policy_name = pname
-        policy = p
+        policy      = p
       }
     ]
   ])
@@ -74,16 +74,16 @@ locals {
 }
 
 resource "aws_iam_role" "this" {
-  count               = var.create_role ? 1 : 0
-  name                = local.role_name_final
-  assume_role_policy  = local.assume_role_policy_calc
-  path                = var.path
-  tags                = var.tags
+  count              = var.create_role ? 1 : 0
+  name               = local.role_name_final
+  assume_role_policy = local.assume_role_policy_calc
+  path               = var.path
+  tags               = var.tags
 }
 
 resource "aws_iam_role_policy_attachment" "managed" {
-  for_each = var.create_role ? toset(var.managed_policy_arns) : []
-  role     = aws_iam_role.this[0].name
+  for_each   = var.create_role ? toset(var.managed_policy_arns) : []
+  role       = aws_iam_role.this[0].name
   policy_arn = each.value
 }
 
@@ -111,7 +111,7 @@ resource "aws_iam_policy" "standalone" {
 
 # OIDC providers
 resource "aws_iam_openid_connect_provider" "oids" {
-  for_each = var.oidc_providers
+  for_each        = var.oidc_providers
   url             = each.value.url
   client_id_list  = try(each.value.client_id_list, [])
   thumbprint_list = try(each.value.thumbprint_list, [])
@@ -119,7 +119,7 @@ resource "aws_iam_openid_connect_provider" "oids" {
 
 # Service-linked roles
 resource "aws_iam_service_linked_role" "slr" {
-  for_each = toset(var.service_linked_roles)
+  for_each         = toset(var.service_linked_roles)
   aws_service_name = each.value
 }
 
@@ -131,16 +131,16 @@ resource "aws_iam_group" "this" {
 }
 
 resource "aws_iam_group_policy_attachment" "managed" {
-  for_each = local.group_managed_map
-  group     = aws_iam_group.this[each.value.group].name
+  for_each   = local.group_managed_map
+  group      = aws_iam_group.this[each.value.group].name
   policy_arn = each.value.policy_arn
 }
 
 resource "aws_iam_group_policy" "inline" {
   for_each = local.group_inline_map
-  name  = each.value.policy_name
-  group = aws_iam_group.this[each.value.group].name
-  policy = each.value.policy
+  name     = each.value.policy_name
+  group    = aws_iam_group.this[each.value.group].name
+  policy   = each.value.policy
 }
 
 # Users
@@ -153,24 +153,24 @@ resource "aws_iam_user" "this" {
 
 resource "aws_iam_user_group_membership" "memberships" {
   for_each = { for uname, u in var.users : uname => try(u.groups, []) }
-  user = aws_iam_user.this[each.key].name
-  groups = each.value
+  user     = aws_iam_user.this[each.key].name
+  groups   = each.value
 }
 
 resource "aws_iam_user_policy" "inline" {
   for_each = local.user_inline_map
-  user = aws_iam_user.this[each.value.user].name
-  name = each.value.policy_name
-  policy = each.value.policy
+  user     = aws_iam_user.this[each.value.user].name
+  name     = each.value.policy_name
+  policy   = each.value.policy
 }
 
 resource "aws_iam_user_policy_attachment" "managed" {
-  for_each = local.user_managed_map
-  user = aws_iam_user.this[each.value.user].name
+  for_each   = local.user_managed_map
+  user       = aws_iam_user.this[each.value.user].name
   policy_arn = each.value.policy_arn
 }
 
 resource "aws_iam_access_key" "this" {
   for_each = local.users_with_keys
-  user  = aws_iam_user.this[each.key].name
+  user     = aws_iam_user.this[each.key].name
 }

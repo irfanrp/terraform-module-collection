@@ -79,8 +79,8 @@ variable "users" {
     - groups (list(string))
     - create_access_key (bool)
   EOT
-  type    = map(any)
-  default = {}
+  type        = map(any)
+  default     = {}
 }
 
 variable "groups" {
@@ -90,8 +90,8 @@ variable "groups" {
     - inline_policies (map(string) of policy JSON)
     - members (list(string))
   EOT
-  type    = map(any)
-  default = {}
+  type        = map(any)
+  default     = {}
 }
 
 variable "service_linked_roles" {
@@ -113,6 +113,6 @@ variable "oidc_providers" {
     - client_id_list (list(string))
     - thumbprint_list (list(string))
   EOT
-  type    = map(any)
-  default = {}
+  type        = map(any)
+  default     = {}
 }
