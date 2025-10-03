@@ -24,17 +24,21 @@ output "alice_user" {
 
 ## Inputs
 
-- `name` (string) — IAM user name. Required.
-- `path` (string) — IAM path. Default: `/`.
-- `groups` (list(string)) — List of existing group names to add the user to. Default: `[]`.
-- `create_access_key` (bool) — Create an access key for the user. Default: `false`.
-- `tags` (map(string)) — Optional tags. Note: tagged resources may not be supported for all IAM sub-resources across provider versions.
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `name` | string | n/a | IAM user name. Required. |
+| `path` | string | `/` | IAM path for the user. |
+| `groups` | list(string) | `[]` | List of existing group names to add the user to. |
+| `create_access_key` | bool | `false` | Whether to create an access key for the user. |
+| `tags` | map(string) | `{}` | Optional tags applied to the user resource (provider/version dependent). |
 
 ## Outputs
 
-- `user_name` — The created IAM user name.
-- `access_key_id` — The created access key id (if `create_access_key = true`).
-- `access_key_secret` — The access key secret (sensitive; will be stored in state).
+| Name | Description | Sensitive |
+|------|-------------|-----------|
+| `user_name` | The created IAM user name. | no |
+| `access_key_id` | The created access key id (present when `create_access_key = true`). | no |
+| `access_key_secret` | The access key secret (present when `create_access_key = true`). | yes — stored in state |
 
 ## Security notes
 
@@ -63,7 +67,3 @@ output "dev_user_key" {
 
 - This submodule assumes the AWS provider (hashicorp/aws) is configured by the calling module.
 - Tagging on some IAM sub-resources may differ across provider versions; if tagging is required for all sub-resources, prefer using separate `aws_iam_*_tag` resources in the root configuration.
-
-## Support
-
-If you want this submodule to also manage login profiles, SSH keys or password reset policies, tell me which features to add and I can extend the module.
