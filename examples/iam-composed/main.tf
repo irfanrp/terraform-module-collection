@@ -17,8 +17,8 @@ module "policy" {
 
 # Create a group and attach the new policy to it
 module "group_developers" {
-  source              = "../../modules/iam/submodules/group"
-  name                = "developers"
+  source = "../../modules/iam/submodules/group"
+  name   = "developers"
   # using the policy module output map
   managed_policy_arns = [module.policy.policy_arns["example-read-only"]]
   inline_policies = {
