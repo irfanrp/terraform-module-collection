@@ -1,0 +1,1 @@
+Example that creates a single IAM user, adds to group 'developers' and creates an access key.
