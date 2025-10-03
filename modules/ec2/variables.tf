@@ -61,6 +61,12 @@ variable "ssm_instance_profile_name" {
   default     = null
 }
 
+variable "external_instance_profile_name" {
+  description = "Optional external instance profile name to attach to instances. If provided, the module will not create an SSM role/instance profile and will use this profile name for instances."
+  type        = string
+  default     = null
+}
+
 variable "key_name" {
   description = "Name of the AWS key pair for SSH access"
   type        = string
