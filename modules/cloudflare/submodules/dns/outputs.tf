@@ -1,7 +1,9 @@
 output "record_ids" {
-  value = { for k, r in null_resource.record : k => r.id }
+  description = "Map of record_name => record id"
+  value       = { for k, r in cloudflare_dns_record.this : k => r.id }
 }
 
 output "record_names" {
-  value = { for k, r in null_resource.record : k => r.triggers.name }
+  description = "Map of record_name => created record name"
+  value       = { for k, r in cloudflare_dns_record.this : k => r.name }
 }

@@ -1,20 +1,33 @@
+variable "account_id" {
+  type        = string
+  description = "Cloudflare Account ID (required when use_provider = true)"
+  default     = ""
+}
+
+variable "zone_id" {
+  type        = string
+  description = "Cloudflare Zone ID"
+  default     = ""
+}
+
 variable "tunnels" {
-  description = "Map of tunnel logical name => { name, ingress }"
+  description = "Map of tunnels. Each value: { name = string, secret = optional(string), routes = optional(list(string)) }"
   type = map(object({
-    name    = string
-    ingress = string
+    name   = string
+    secret = optional(string)
+    routes = optional(list(string))
   }))
   default = {}
 }
 
-variable "tags" {
-  description = "Optional tags/meta for tunnels"
-  type        = map(string)
-  default     = {}
+variable "local_port" {
+  type        = number
+  description = "Local port for the app"
+  default     = 8080
 }
 
 variable "use_provider" {
-  description = "When true, attempt to create real cloudflare_tunnel resources. If false, keep null_resource placeholders."
   type        = bool
-  default     = false
+  description = "When true, create real cloudflare tunnel resources"
+  default     = true
 }

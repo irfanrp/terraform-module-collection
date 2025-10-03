@@ -1,7 +1,7 @@
 terraform { required_version = ">= 1.0" }
 
 provider "cloudflare" {
-  # configure with env var or token
+  api_token = var.cloudflare_api_token
 }
 
 module "cf" {
@@ -13,12 +13,18 @@ module "cf" {
   }
 
   create_tunnel = true
+  account_id    = var.account_id
   tunnels = {
-    "my-tunnel" = { name = "my-tunnel", ingress = "http://localhost:8080" }
+    "my-tunnel" = { name = "my-tunnel", routes = ["10.0.1.0/24"] }
   }
 
-  use_tunnel_provider = false
+  use_tunnel_provider = true
+  use_dns_provider    = true
 }
 
-output "records" { value = try(module.cf[0].record_ids, null) }
-output "tunnels" { value = try(module.cf[0].tunnel_triggers, null) }
+output "records" {
+  value = module.cf.record_ids
+}
+output "tunnels" {
+  value = module.cf.tunnel_ids
+}

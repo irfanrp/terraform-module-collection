@@ -1,58 +1,24 @@
-// Wrapper that delegates to dns and tunnel submodules
-
-variable "zone_id" {
-  description = "Cloudflare zone id"
-  type        = string
-  default     = null
-}
-
-variable "create_dns" {
-  description = "Create DNS records via submodule"
-  type        = bool
-  default     = false
-}
-
-variable "dns_records" {
-  description = "Map of dns records to create"
-  type        = map(any)
-  default     = {}
-}
-
-variable "default_proxied" {
-  description = "Default proxied value for DNS records"
-  type        = bool
-  default     = false
-}
-
-variable "create_tunnel" {
-  description = "Create tunnels via submodule"
-  type        = bool
-  default     = false
-}
-
-variable "tunnels" {
-  description = "Map of tunnels to create"
-  type        = map(any)
-  default     = {}
-}
-
-variable "use_tunnel_provider" {
-  description = "When true, submodule will attempt to use the Cloudflare provider's tunnel resources"
-  type        = bool
-  default     = false
-}
-
 module "dns" {
   source          = "./submodules/dns"
-  count           = var.create_dns ? 1 : 0
   zone_id         = var.zone_id
   dns_records     = var.dns_records
-  default_proxied = var.default_proxied
+  default_proxied = false
+  use_provider    = var.use_dns_provider
 }
 
 module "tunnel" {
   source       = "./submodules/tunnel"
-  count        = var.create_tunnel ? 1 : 0
+  account_id   = var.account_id
+  zone_id      = var.zone_id
   tunnels      = var.tunnels
+  local_port   = var.local_port
   use_provider = var.use_tunnel_provider
+}
+
+output "record_ids" {
+  value = try(module.dns.record_ids, {})
+}
+
+output "tunnel_ids" {
+  value = try(module.tunnel.tunnel_ids, {})
 }

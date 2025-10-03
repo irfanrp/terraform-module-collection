@@ -20,3 +20,9 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "use_provider" {
+  description = "When true, create real cloudflare_record resources. Otherwise create null_resource placeholders."
+  type        = bool
+  default     = false
+}

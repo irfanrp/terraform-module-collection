@@ -17,6 +17,7 @@ Outputs
 | Name | Description |
 |------|-------------|
 | `tunnel_triggers` | Map of tunnel_name => triggers (placeholder). |
+| `tunnel_ids` | Map of tunnel_name => tunnel id (when provider enabled). |
 
 Notes
 
