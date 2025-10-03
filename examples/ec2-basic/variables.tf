@@ -39,3 +39,9 @@ variable "instance_type" {
   type        = string
   default     = "t3.micro"
 }
+
+variable "private_ip_addresses" {
+  description = "Optional list of private IPs for the instances in this example. Use an empty list to let AWS auto-assign."
+  type        = list(string)
+  default     = []
+}

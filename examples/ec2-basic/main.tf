@@ -86,6 +86,7 @@ module "ec2" {
   enable_cloudwatch_logs      = true                                # Enable CloudWatch logs
   enable_cloudwatch_metrics   = true                                # Enable CloudWatch metrics
   user_data                   = file("${path.module}/user-data.sh") # Custom user data
+  private_ip_addresses        = var.private_ip_addresses
 
   tags = {
     Environment = var.environment

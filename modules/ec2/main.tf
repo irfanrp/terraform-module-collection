@@ -107,6 +107,7 @@ resource "aws_instance" "this" {
   subnet_id                   = element(var.subnet_ids, count.index % length(var.subnet_ids))
   vpc_security_group_ids      = var.security_group_ids
   associate_public_ip_address = var.associate_public_ip
+  private_ip                  = length(var.private_ip_addresses) > 0 ? element(var.private_ip_addresses, count.index % length(var.private_ip_addresses)) : null
   monitoring                  = var.enable_detailed_monitoring
   iam_instance_profile        = var.create_ssm_instance_profile ? aws_iam_instance_profile.ssm_instance_profile[0].name : null
   key_name                    = var.key_name

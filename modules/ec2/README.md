@@ -94,6 +94,7 @@ module "ec2_advanced" {
 | placement_group | Placement group for the instances | string | null | no |
 | tenancy | Tenancy of the instance (default, dedicated, host) | string | "default" | no |
 | tags | Tags to apply to resources | map(string) | {} | no |
+| private_ip_addresses | Optional list of private IP addresses to assign to instances (round-robin) | list(string) | [] | no |
 
 ## Outputs
 | Name | Description |
