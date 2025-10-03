@@ -1,5 +1,5 @@
 output "policy_arn" {
-  value = module.policy_readonly.policy_arn
+  value = module.policy.policy_arns["example-read-only"]
 }
 
 output "group_name" {

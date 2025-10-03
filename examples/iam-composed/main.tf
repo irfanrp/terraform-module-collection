@@ -1,24 +1,26 @@
 # Create a standalone policy
-module "policy_readonly" {
+module "policy" {
   source = "../../modules/iam/submodules/policy"
-  name   = "example-read-only"
-  policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Effect   = "Allow",
-        Action   = ["s3:ListBucket", "s3:GetObject"],
-        Resource = ["arn:aws:s3:::example-bucket", "arn:aws:s3:::example-bucket/*"]
-      }
-    ]
-  })
+  policies = {
+    "example-read-only" = jsonencode({
+      Version = "2012-10-17",
+      Statement = [
+        {
+          Effect   = "Allow",
+          Action   = ["s3:ListBucket", "s3:GetObject"],
+          Resource = ["arn:aws:s3:::example-bucket", "arn:aws:s3:::example-bucket/*"]
+        }
+      ]
+    })
+  }
 }
 
 # Create a group and attach the new policy to it
 module "group_developers" {
   source              = "../../modules/iam/submodules/group"
   name                = "developers"
-  managed_policy_arns = [module.policy_readonly.policy_arn]
+  # using the policy module output map
+  managed_policy_arns = [module.policy.policy_arns["example-read-only"]]
   inline_policies = {
     dev_ssm = jsonencode({
       Version   = "2012-10-17",
