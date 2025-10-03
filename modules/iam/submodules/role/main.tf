@@ -1,11 +1,19 @@
 locals {
   assume_policy = var.assume_role_policy != null ? var.assume_role_policy : jsonencode({
     Version = "2012-10-17",
-    Statement = [for svc in var.assume_services : {
-      Effect = "Allow",
-      Principal = { Service = svc },
-      Action = "sts:AssumeRole"
-    }]
+    Statement = concat(
+      [for svc in var.assume_services : {
+        Effect = "Allow",
+        Principal = { Service = svc },
+        Action = "sts:AssumeRole"
+      }],
+      [for o in var.assume_oidc : {
+        Effect = "Allow",
+        Principal = { Federated = o.provider },
+        Action = "sts:AssumeRoleWithWebIdentity",
+        Condition = length(o.conditions) > 0 ? o.conditions : null
+      }]
+    )
   })
 }
 

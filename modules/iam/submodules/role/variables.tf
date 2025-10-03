@@ -32,3 +32,16 @@ variable "create_instance_profile" {
 	type        = bool
 	default     = false
 }
+
+variable "assume_oidc" {
+	description = <<EOF
+List of OIDC trust blocks to include in the role's assume role policy. Each item is an object with:
+- `provider` (string): the OIDC provider ARN (for example: arn:aws:iam::123456789012:oidc-provider/oidc.eks.amazonaws.com/id/XYZ)
+- `conditions` (map(string)): optional map of condition keys to values (e.g. {"oidc.eks.amazonaws.com/id/XYZ:sub" = "system:serviceaccount:ns:sa"})
+EOF
+	type = list(object({
+		provider   = string
+		conditions = map(string)
+	}))
+	default = []
+}
