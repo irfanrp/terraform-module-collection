@@ -2,9 +2,9 @@ terraform { required_version = ">= 1.0" }
 provider "aws" { region = var.aws_region }
 
 module "u" {
-  source = "../../../modules/iam/submodules/user"
-  name   = "example-user"
-  groups = ["developers"]
+  source            = "../../../modules/iam/submodules/user"
+  name              = "example-user"
+  groups            = ["developers"]
   create_access_key = true
 }
 

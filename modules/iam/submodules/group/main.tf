@@ -4,8 +4,8 @@ resource "aws_iam_group" "this" {
 }
 
 resource "aws_iam_group_policy_attachment" "managed" {
-  for_each = toset(var.managed_policy_arns)
-  group    = aws_iam_group.this.name
+  for_each   = toset(var.managed_policy_arns)
+  group      = aws_iam_group.this.name
   policy_arn = each.value
 }
 

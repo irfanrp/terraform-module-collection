@@ -3,14 +3,14 @@ locals {
     Version = "2012-10-17",
     Statement = concat(
       [for svc in var.assume_services : {
-        Effect = "Allow",
+        Effect    = "Allow",
         Principal = { Service = svc },
-        Action = "sts:AssumeRole"
+        Action    = "sts:AssumeRole"
       }],
       [for o in var.assume_oidc : {
-        Effect = "Allow",
+        Effect    = "Allow",
         Principal = { Federated = o.provider },
-        Action = "sts:AssumeRoleWithWebIdentity",
+        Action    = "sts:AssumeRoleWithWebIdentity",
         Condition = length(o.conditions) > 0 ? o.conditions : null
       }]
     )
@@ -18,13 +18,13 @@ locals {
 }
 
 resource "aws_iam_role" "this" {
-  name = var.name
+  name               = var.name
   assume_role_policy = local.assume_policy
 }
 
 resource "aws_iam_role_policy_attachment" "managed" {
-  for_each = toset(var.managed_policy_arns)
-  role = aws_iam_role.this.name
+  for_each   = toset(var.managed_policy_arns)
+  role       = aws_iam_role.this.name
   policy_arn = each.value
 }
 

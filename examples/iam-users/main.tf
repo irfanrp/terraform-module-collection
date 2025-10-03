@@ -12,9 +12,9 @@ provider "aws" {
 module "iam_users_example" {
   source = "../../modules/iam"
 
-  name_prefix         = "example-iam-"
+  name_prefix             = "example-iam-"
   create_instance_profile = false
-  tags = { Project = "iam-users-example" }
+  tags                    = { Project = "iam-users-example" }
 
   # Define groups and attach policies to groups (not users)
   groups = {
@@ -25,8 +25,8 @@ module "iam_users_example" {
           Version = "2012-10-17",
           Statement = [
             {
-              Effect = "Allow",
-              Action = ["ssm:DescribeInstanceInformation"],
+              Effect   = "Allow",
+              Action   = ["ssm:DescribeInstanceInformation"],
               Resource = "*"
             }
           ]
@@ -43,14 +43,14 @@ module "iam_users_example" {
   # Define users, assign them to groups, and optionally create access keys
   users = {
     alice = {
-      path = "/developers/"
-      groups = ["developers"]
+      path              = "/developers/"
+      groups            = ["developers"]
       create_access_key = true
     }
 
     bob = {
-      path = "/ops/"
-      groups = ["ops"]
+      path              = "/ops/"
+      groups            = ["ops"]
       create_access_key = false
     }
   }
