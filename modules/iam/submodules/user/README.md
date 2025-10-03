@@ -24,13 +24,16 @@ output "alice_user" {
 
 ## Inputs
 
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `name` | string | n/a | IAM user name. Required. |
-| `path` | string | `/` | IAM path for the user. |
-| `groups` | list(string) | `[]` | List of existing group names to add the user to. |
-| `create_access_key` | bool | `false` | Whether to create an access key for the user. |
-| `tags` | map(string) | `{}` | Optional tags applied to the user resource (provider/version dependent). |
+| Name | Type | Default | Required | Description |
+|------|------|---------|----------|-------------|
+| `name` | string | n/a | yes | IAM user name. |
+| `path` | string | `/` | no | IAM path for the user. |
+| `groups` | list(string) | `[]` | no | List of existing group names to add the user to. |
+| `create_access_key` | bool | `false` | no | Whether to create an access key for the user. |
+| `tags` | map(string) | `{}` | no | Optional tags applied to the user resource (provider/version dependent). |
+| `create_login_profile` | bool | `false` | no | Create a console login profile for the user. |
+| `password_reset_required` | bool | `true` | no | Require password reset on first login for console profile. |
+| `pgp_key` | string | `null` | no | Optional PGP key (ascii-armored) to receive an encrypted password from the provider. |
 
 ## Outputs
 
