@@ -2,7 +2,7 @@ locals {
   common_tags = merge(var.tags, { Module = "ec2", Name = var.name })
 
   ssm_instance_profile_name = var.ssm_instance_profile_name != null ? var.ssm_instance_profile_name : "${var.name}-ssm-instance-profile"
-  create_local_ssm = var.external_instance_profile_name == null && var.create_ssm_instance_profile
+  create_local_ssm          = var.external_instance_profile_name == null && var.create_ssm_instance_profile
 }
 
 resource "aws_iam_role" "ssm_role" {
@@ -12,8 +12,8 @@ resource "aws_iam_role" "ssm_role" {
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
     Statement = [{
-      Action = "sts:AssumeRole",
-      Effect = "Allow",
+      Action    = "sts:AssumeRole",
+      Effect    = "Allow",
       Principal = { Service = "ec2.amazonaws.com" }
     }]
   })
@@ -104,7 +104,7 @@ resource "aws_instance" "this" {
     volume_size = var.ebs_volume_size
     volume_type = "gp3"
     encrypted   = true
-    tags = merge(local.common_tags, { Name = "${var.name}-root-volume-${count.index}" })
+    tags        = merge(local.common_tags, { Name = "${var.name}-root-volume-${count.index}" })
   }
 
   tags = merge(local.common_tags, { Index = tostring(count.index), Name = "${var.name}-${count.index}" })
@@ -113,7 +113,7 @@ resource "aws_instance" "this" {
 }
 
 resource "aws_eip" "this" {
-  count = var.associate_public_ip ? var.instance_count : 0
+  count    = var.associate_public_ip ? var.instance_count : 0
   instance = aws_instance.this[count.index].id
-  tags = merge(local.common_tags, { Index = tostring(count.index), Type = "eip" })
+  tags     = merge(local.common_tags, { Index = tostring(count.index), Type = "eip" })
 }
