@@ -18,61 +18,6 @@ locals {
   })
 }
 
-locals {
-  # Flatten group managed policy attachments -> map key => { group, policy_arn }
-  group_managed_list = flatten([
-    for gname, g in var.groups : [
-      for p in try(g.managed_policy_arns, []) : {
-        key        = "${gname}::${replace(p, "/", "_")}"
-        group      = gname
-        policy_arn = p
-      }
-    ]
-  ])
-
-  group_managed_map = { for item in local.group_managed_list : item.key => { group = item.group, policy_arn = item.policy_arn } }
-
-  group_inline_list = flatten([
-    for gname, g in var.groups : [
-      for pname, p in try(g.inline_policies, {}) : {
-        key         = "${gname}::${pname}"
-        group       = gname
-        policy_name = pname
-        policy      = p
-      }
-    ]
-  ])
-
-  group_inline_map = { for item in local.group_inline_list : item.key => { group = item.group, policy_name = item.policy_name, policy = item.policy } }
-
-  user_managed_list = flatten([
-    for uname, u in var.users : [
-      for p in try(u.managed_policy_arns, []) : {
-        key        = "${uname}::${replace(p, "/", "_")}"
-        user       = uname
-        policy_arn = p
-      }
-    ]
-  ])
-
-  user_managed_map = { for item in local.user_managed_list : item.key => { user = item.user, policy_arn = item.policy_arn } }
-
-  user_inline_list = flatten([
-    for uname, u in var.users : [
-      for pname, p in try(u.inline_policies, {}) : {
-        key         = "${uname}::${pname}"
-        user        = uname
-        policy_name = pname
-        policy      = p
-      }
-    ]
-  ])
-
-  user_inline_map = { for item in local.user_inline_list : item.key => { user = item.user, policy_name = item.policy_name, policy = item.policy } }
-
-  users_with_keys = { for uname, u in var.users : uname => u if try(u.create_access_key, false) }
-}
-
 // Delegate role creation to submodule (keeps same behaviour when create_role=true)
 module "role" {
   count                   = var.create_role ? 1 : 0
@@ -85,12 +30,10 @@ module "role" {
   create_instance_profile = var.create_instance_profile
 }
 
-// Standalone policies via submodule
+// Standalone policies via submodule (pass the whole map)
 module "policy" {
-  for_each = var.policies
   source   = "./submodules/policy"
-  name     = each.key
-  policy   = each.value
+  policies = var.policies
   path     = var.path
 }
 

@@ -46,109 +46,60 @@ Outputs
 - `service_linked_roles` — list of created service-linked role service names
 
 Examples
+# IAM (wrapper)
 
-1) Basic role + instance profile for EC2 (SSM)
+Small wrapper module that composes focused IAM submodules: role, policy, user, group and oidc-provider.
 
-```hcl
-module "iam_ssm" {
-  source = "../../modules/iam"
+Keep this module as a high-level convenience. For advanced use prefer composing the submodules directly.
 
-  name_prefix             = "ec2-ssm-"
-  assume_services         = ["ec2.amazonaws.com"]
-  managed_policy_arns     = ["arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore", "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"]
-  create_instance_profile = true
-}
+Why use the wrapper
+- One module call to create roles, instance profiles, standalone policies, users and groups
+- Inputs are maps/lists so you can create many identities/policies in a single call
+- Works well for small infra stacks and examples
 
-module "ec2" {
-  source = "../../modules/ec2"
-
-  # ...other inputs
-  create_ssm_instance_profile = false
-  iam_instance_profile         = module.iam_ssm.instance_profile_name
-}
-```
-
-2) Create standalone policy and attach to a group and user
-
+Quick example (minimal)
 ```hcl
 module "iam" {
   source = "../../modules/iam"
 
+  name_prefix = "app-"
+
+  # create a standalone policy
   policies = {
     "readonly-s3" = jsonencode({
-      Version = "2012-10-17"
+      Version = "2012-10-17",
       Statement = [{ Effect = "Allow", Action = ["s3:GetObject"], Resource = "*" }]
     })
   }
 
+  # create a user and add to group
   groups = {
-    devs = {
-      managed_policy_arns = ["arn:aws:iam::aws:policy/ReadOnlyAccess"]
-      inline_policies = {
-        extra = jsonencode({ Version = "2012-10-17", Statement = [] })
-      }
-    }
+    devs = { managed_policy_arns = ["arn:aws:iam::aws:policy/ReadOnlyAccess"] }
   }
 
   users = {
-    alice = {
-      managed_policy_arns = ["arn:aws:iam::aws:policy/PowerUserAccess"]
-      groups = ["devs"]
-      create_access_key = true
-    }
+    alice = { groups = ["devs"], create_access_key = true }
   }
 }
 ```
 
-3) Cross-account role + OIDC provider (EKS example)
+Key inputs (high level)
+- `policies` — map(name => policy JSON)
+- `roles` — created via `create_role` + role-related vars (see `variables.tf`)
+- `users` — map of users (path, groups, managed_policy_arns, create_access_key)
+- `groups` — map of groups (managed_policy_arns, inline_policies)
+- `oidc_providers` — map for OIDC provider creation
 
-```hcl
-module "iam_eks" {
-  source = "../../modules/iam"
+Outputs
+- `role_name`, `role_arn` — when a role is created
+- `instance_profile_name` — when instance profile is created
+- `policy_arns` — map of created standalone policy name => ARN
+- `user_access_key_ids` / `user_access_key_secrets` — access key outputs (sensitive)
 
-  name_prefix = "eks-cluster-"
-  assume_services = ["eks.amazonaws.com"]
-  cross_account_principals = ["arn:aws:iam::123456789012:role/ExternalAdminRole"]
-}
+Notes
+- Prefer composing the submodules directly for complex setups — see `modules/iam/submodules/`.
+- Access keys and secrets are exposed in state; rotate and secure your backend.
 
-module "oidc" {
-  source = "../../modules/iam"
-  oidc_providers = {
-    eks = {
-      url = "https://oidc.eks.region.amazonaws.com/id/EXAMPLED539D4633E53DE1B716D3041E"
-      client_id_list = ["sts.amazonaws.com"]
-      thumbprint_list = ["9e99a48a9960b14926bb7f3b02e22da0d3b7a3f6"]
-    }
-  }
-}
-```
+Example folder: `examples/iam-composed` (more examples under `examples/iam-*`).
 
-Notes and recommendations
-- Inline and standalone policies must be valid JSON. The module attaches the policy bodies you supply.
-- When providing `private` data such as access keys in examples, prefer creating them with CI secrets and rotate regularly.
-- Provider compatibility: if you need tags or provider-specific arguments on particular IAM sub-resources, verify your `hashicorp/aws` provider version and add tags via separate `aws_iam_*_tag` resources if needed.
-- Validation: I can add `validation` blocks for `users`, `groups`, and `oidc_providers` to fail fast on common mistakes (recommended for strict inputs).
-
-Composed (recommended) pattern
---------------------------------
-This repository includes small, single-purpose IAM submodules under `modules/iam/submodules/` (for example: `user`, `group`, `policy`, `role`, `oidc-provider`). We recommend composing these submodules in your root configuration when you want clear, testable building blocks.
-
-Why compose?
-- Smaller modules are easier to reason about, test, and reuse across projects.
-- Composed examples surface input/output mismatches earlier and reduce accidental coupling between resources.
-
-See `examples/iam-composed` for a runnable example that shows how to:
-- create a standalone policy (policy submodule)
-- create a group and attach the policy (group submodule)
-- create a role and instance profile for EC2 (role submodule)
-- create a user and add them to the group (user submodule)
-
-Example quickstart
-1. cd examples/iam-composed
-2. terraform init -backend=false
-3. terraform validate
-
-Notes about secrets
-- The user submodule can create access keys and exposes them as sensitive outputs. These secrets will be stored in state; secure your backend and rotate keys regularly.
-
-If you want, I can add a few curated examples (EKS, cross-account trust, or user onboarding) and input validation next. Tell me which example to add first.
+License: MIT
