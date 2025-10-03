@@ -60,6 +60,39 @@ module "ec2_advanced" {
   additional_iam_policies = [
     "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess",
     aws_iam_policy.custom_policy.arn
+
+  ## Integrating with an external IAM module (recommended)
+
+  If you manage IAM resources in a separate module (for example `modules/iam`), you can create the role and instance profile there and then pass the profile name into the EC2 module. This avoids duplicate IAM resources and keeps IAM policies and principals centralized.
+
+  Example wiring:
+
+  ```hcl
+  module "iam_ssm" {
+    source = "../../modules/iam"
+
+    name_prefix             = "ec2-ssm-"
+    assume_services         = ["ec2.amazonaws.com"]
+    managed_policy_arns     = [
+      "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore",
+      "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy",
+    ]
+    create_instance_profile = true
+  }
+
+  module "ec2" {
+    source = "../../modules/ec2"
+
+    # ...other inputs (name, ami_id, subnet_ids, etc.) ...
+    create_ssm_instance_profile        = false
+    external_instance_profile_name     = module.iam_ssm.instance_profile_name
+  }
+  ```
+
+  Notes:
+  - `external_instance_profile_name` takes precedence. If you provide it, the EC2 module will not create its own SSM role/profile and will use the supplied profile name for `iam_instance_profile` on `aws_instance`.
+  - Prefer centralizing IAM (roles, policies, OIDC providers) in one module and referencing outputs from that module in compute modules. This makes reviews and policy changes safer.
+  - Ensure the IAM instance profile exists (or is created in the same Terraform apply via the `iam` module) before instances try to use it. When both modules are in the same root configuration Terraform will order them automatically based on the output reference.
   ]
 
   tags = {

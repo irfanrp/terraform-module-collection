@@ -73,45 +73,32 @@ locals {
   users_with_keys = { for uname, u in var.users : uname => u if try(u.create_access_key, false) }
 }
 
-resource "aws_iam_role" "this" {
-  count              = var.create_role ? 1 : 0
-  name               = local.role_name_final
+// Delegate role creation to submodule (keeps same behaviour when create_role=true)
+module "role" {
+  count = var.create_role ? 1 : 0
+  source = "./submodules/role"
+  name   = local.role_name_final
   assume_role_policy = local.assume_role_policy_calc
-  path               = var.path
-  tags               = var.tags
+  assume_services = var.assume_services
+  managed_policy_arns = var.managed_policy_arns
+  inline_policies = var.inline_policies
+  create_instance_profile = var.create_instance_profile
 }
 
-resource "aws_iam_role_policy_attachment" "managed" {
-  for_each   = var.create_role ? toset(var.managed_policy_arns) : []
-  role       = aws_iam_role.this[0].name
-  policy_arn = each.value
-}
-
-resource "aws_iam_role_policy" "inline" {
-  for_each = var.create_role ? var.inline_policies : {}
-  name     = each.key
-  role     = aws_iam_role.this[0].name
-  policy   = each.value
-}
-
-resource "aws_iam_instance_profile" "this" {
-  count = var.create_instance_profile && var.create_role ? 1 : 0
-  name  = var.instance_profile_name != null ? var.instance_profile_name : local.role_name_final
-  role  = aws_iam_role.this[0].name
-  path  = var.path
-}
-
-# Standalone policies
-resource "aws_iam_policy" "standalone" {
+// Standalone policies via submodule
+module "policy" {
   for_each = var.policies
+  source   = "./submodules/policy"
   name     = each.key
   policy   = each.value
   path     = var.path
 }
 
 # OIDC providers
-resource "aws_iam_openid_connect_provider" "oids" {
-  for_each        = var.oidc_providers
+// OIDC providers via submodule
+module "oidc" {
+  for_each = var.oidc_providers
+  source   = "./submodules/oidc-provider"
   url             = each.value.url
   client_id_list  = try(each.value.client_id_list, [])
   thumbprint_list = try(each.value.thumbprint_list, [])
@@ -122,55 +109,22 @@ resource "aws_iam_service_linked_role" "slr" {
   for_each         = toset(var.service_linked_roles)
   aws_service_name = each.value
 }
-
-# Groups
-resource "aws_iam_group" "this" {
+// Groups via submodule (group submodule handles managed/inline attachments)
+module "group" {
   for_each = var.groups
+  source   = "./submodules/group"
   name     = each.key
   path     = try(each.value.path, var.path)
+  managed_policy_arns = try(each.value.managed_policy_arns, [])
+  inline_policies = try(each.value.inline_policies, {})
 }
 
-resource "aws_iam_group_policy_attachment" "managed" {
-  for_each   = local.group_managed_map
-  group      = aws_iam_group.this[each.value.group].name
-  policy_arn = each.value.policy_arn
-}
-
-resource "aws_iam_group_policy" "inline" {
-  for_each = local.group_inline_map
-  name     = each.value.policy_name
-  group    = aws_iam_group.this[each.value.group].name
-  policy   = each.value.policy
-}
-
-# Users
-resource "aws_iam_user" "this" {
+// Users via submodule (manages group membership and access keys)
+module "user" {
   for_each = var.users
+  source   = "./submodules/user"
   name     = each.key
   path     = try(each.value.path, var.path)
-  # tags intentionally omitted for compatibility; add tags via separate resource if needed
-}
-
-resource "aws_iam_user_group_membership" "memberships" {
-  for_each = { for uname, u in var.users : uname => try(u.groups, []) }
-  user     = aws_iam_user.this[each.key].name
-  groups   = each.value
-}
-
-resource "aws_iam_user_policy" "inline" {
-  for_each = local.user_inline_map
-  user     = aws_iam_user.this[each.value.user].name
-  name     = each.value.policy_name
-  policy   = each.value.policy
-}
-
-resource "aws_iam_user_policy_attachment" "managed" {
-  for_each   = local.user_managed_map
-  user       = aws_iam_user.this[each.value.user].name
-  policy_arn = each.value.policy_arn
-}
-
-resource "aws_iam_access_key" "this" {
-  for_each = local.users_with_keys
-  user     = aws_iam_user.this[each.key].name
+  groups   = try(each.value.groups, [])
+  create_access_key = try(each.value.create_access_key, false)
 }

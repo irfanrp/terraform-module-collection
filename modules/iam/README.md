@@ -129,4 +129,26 @@ Notes and recommendations
 - Provider compatibility: if you need tags or provider-specific arguments on particular IAM sub-resources, verify your `hashicorp/aws` provider version and add tags via separate `aws_iam_*_tag` resources if needed.
 - Validation: I can add `validation` blocks for `users`, `groups`, and `oidc_providers` to fail fast on common mistakes (recommended for strict inputs).
 
+Composed (recommended) pattern
+--------------------------------
+This repository includes small, single-purpose IAM submodules under `modules/iam/submodules/` (for example: `user`, `group`, `policy`, `role`, `oidc-provider`). We recommend composing these submodules in your root configuration when you want clear, testable building blocks.
+
+Why compose?
+- Smaller modules are easier to reason about, test, and reuse across projects.
+- Composed examples surface input/output mismatches earlier and reduce accidental coupling between resources.
+
+See `examples/iam-composed` for a runnable example that shows how to:
+- create a standalone policy (policy submodule)
+- create a group and attach the policy (group submodule)
+- create a role and instance profile for EC2 (role submodule)
+- create a user and add them to the group (user submodule)
+
+Example quickstart
+1. cd examples/iam-composed
+2. terraform init -backend=false
+3. terraform validate
+
+Notes about secrets
+- The user submodule can create access keys and exposes them as sensitive outputs. These secrets will be stored in state; secure your backend and rotate keys regularly.
+
 If you want, I can add a few curated examples (EKS, cross-account trust, or user onboarding) and input validation next. Tell me which example to add first.
