@@ -1,22 +1,22 @@
 variable "name" {
-	description = "IAM group name"
-	type        = string
+  description = "IAM group name"
+  type        = string
 }
 
 variable "path" {
-	description = "Group path"
-	type        = string
-	default     = "/"
+  description = "Group path"
+  type        = string
+  default     = "/"
 }
 
 variable "managed_policy_arns" {
-	description = "Managed ARNs to attach"
-	type        = list(string)
-	default     = []
+  description = "Managed ARNs to attach"
+  type        = list(string)
+  default     = []
 }
 
 variable "inline_policies" {
-	description = "Inline policies map"
-	type        = map(string)
-	default     = {}
+  description = "Inline policies map"
+  type        = map(string)
+  default     = {}
 }
