@@ -105,27 +105,3 @@ vpc-apply: ## Apply VPC example
 
 vpc-destroy: ## Destroy VPC example
 	@cd examples/vpc-basic && terraform destroy
-
-# Local testing (no AWS credentials needed)
-test-syntax: ## Test syntax without AWS credentials
-	@echo "🧪 Testing syntax..."
-	@cd examples/vpc-syntax-check && terraform init -upgrade
-	@cd examples/vpc-syntax-check && terraform validate
-	@echo "✅ Syntax validation passed!"
-
-test-localstack: ## Test with LocalStack (requires LocalStack running)
-	@echo "🐳 Testing with LocalStack..."
-	@if ! curl -s http://localhost:4566/_localstack/health > /dev/null; then \
-		echo "❌ LocalStack not running. Start it with: localstack start"; \
-		exit 1; \
-	fi
-	@cd examples/vpc-localstack && terraform init -upgrade
-	@cd examples/vpc-localstack && terraform plan
-	@echo "✅ LocalStack test passed!"
-
-quick-test: ## Quick syntax validation (fastest)
-	@echo "⚡ Quick syntax test..."
-	@terraform fmt -check -recursive . || (echo "❌ Format check failed. Run 'make fmt' to fix." && exit 1)
-	@cd examples/vpc-syntax-check && terraform init -upgrade > /dev/null 2>&1
-	@cd examples/vpc-syntax-check && terraform validate
-	@echo "✅ Quick test passed!"
