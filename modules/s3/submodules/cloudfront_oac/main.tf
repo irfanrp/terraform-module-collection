@@ -1,12 +1,12 @@
 resource "aws_cloudfront_origin_access_control" "oac" {
   count = var.create_oac ? 1 : 0
 
-  name    = "${var.name}-oac"
+  name        = "${var.name}-oac"
   description = "Origin Access Control for ${var.name}"
 
   origin_access_control_origin_type = "s3"
-  signing_protocol = "sigv4"
-  signing_behavior = "always"
+  signing_protocol                  = "sigv4"
+  signing_behavior                  = "always"
 }
 
 resource "aws_cloudfront_distribution" "this" {
@@ -28,13 +28,13 @@ resource "aws_cloudfront_distribution" "this" {
   is_ipv6_enabled = true
 
   default_cache_behavior {
-    allowed_methods  = ["GET", "HEAD"]
-    cached_methods   = ["GET", "HEAD"]
-    target_origin_id = "s3-${var.name}"
+    allowed_methods        = ["GET", "HEAD"]
+    cached_methods         = ["GET", "HEAD"]
+    target_origin_id       = "s3-${var.name}"
     viewer_protocol_policy = var.viewer_protocol_policy
-    min_ttl     = var.min_ttl
-    default_ttl = var.default_ttl
-    max_ttl     = var.max_ttl
+    min_ttl                = var.min_ttl
+    default_ttl            = var.default_ttl
+    max_ttl                = var.max_ttl
   }
 
   price_class = var.price_class
@@ -63,11 +63,11 @@ resource "aws_s3_bucket_policy" "cf_only" {
     Version = "2012-10-17",
     Statement = [
       {
-        Sid = "AllowCloudFrontServicePrincipal",
-        Effect = "Allow",
+        Sid       = "AllowCloudFrontServicePrincipal",
+        Effect    = "Allow",
         Principal = { Service = "cloudfront.amazonaws.com" },
-        Action = "s3:GetObject",
-        Resource = "${var.target_bucket_arn}/*",
+        Action    = "s3:GetObject",
+        Resource  = "${var.target_bucket_arn}/*",
         Condition = var.source_account != "" ? { StringEquals = { "AWS:SourceArn" = aws_cloudfront_distribution.this[0].arn, "AWS:SourceAccount" = var.source_account } } : { StringEquals = { "AWS:SourceArn" = aws_cloudfront_distribution.this[0].arn } }
       }
     ]

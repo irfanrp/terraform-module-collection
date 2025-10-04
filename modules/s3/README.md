@@ -1,10 +1,17 @@
 # S3 module (wrapper)
 
-This `modules/s3` is a small wrapper that delegates per-bucket configuration to the
-`modules/s3/submodules/bucket` submodule. It provides a convenient, map-driven
-interface to create multiple buckets with sensible defaults.
+This `modules/s3` folder contains a small wrapper module that delegates per-bucket
+configuration to `modules/s3/submodules/bucket`. It provides a convenient,
+map-driven interface to create multiple S3 buckets with production-friendly
+defaults.
 
-Preferred input: `buckets` (map).
+Main input
+- `buckets` (map) — preferred interface. A map of key => bucket configuration
+  objects. See the `submodules/bucket` README for available per-bucket options.
+- Legacy compatibility: the module still accepts `bucket_name` (single) and
+  `bucket_names` (list). When `buckets` is empty the wrapper converts legacy
+  inputs into the `buckets` map. Legacy variables are deprecated and may be
+  removed in a future major release.
 
 Quick example (multi-bucket)
 
@@ -30,34 +37,53 @@ module "s3" {
 }
 ```
 
-Legacy compatibility
+CloudFront (OAC) integration
 
-- The module still accepts the legacy `bucket_name` (single) and `bucket_names` (list) variables.
-- When `buckets` is empty the wrapper will convert legacy inputs into the `buckets` map.
-- Legacy variables are considered deprecated and may be removed in a future major release — migrate to the `buckets` map when convenient.
+If you create a CloudFront distribution that serves content from an S3 bucket,
+use the `modules/s3/submodules/cloudfront_oac` submodule. That submodule can
+create an Origin Access Control (OAC) and — optionally — attach a restrictive
+S3 bucket policy so that only the CloudFront distribution can get objects from
+the bucket.
 
-Where to find more examples
+Example (CloudFront + attach bucket policy)
 
-- Per-bucket options and examples: `modules/s3/submodules/bucket/README.md`
-- Bucket policy examples: `modules/s3/submodules/policy/README.md`
-- Example usages validated locally: `examples/s3-basic` and `examples/s3-multi`
+```hcl
+module "bucket" {
+  source = "../../modules/s3/submodules/bucket"
+  key  = "example-oac"
+  name = "example-oac-bucket-${terraform.workspace}"
+}
 
-Notes and recommendations
+module "cf" {
+  source                         = "../../modules/s3/submodules/cloudfront_oac"
+  name                           = "example-oac"
+  origin_bucket_regional_domain_name = module.bucket.bucket_regional_domain_name
+  create_oac                     = true
+  attach_bucket_policy           = true
+  target_bucket_id               = module.bucket.id
+  target_bucket_arn              = module.bucket.arn
+}
+```
 
-- `buckets` is intentionally flexible (the module accepts `any`) to make migration easier. If you want stricter validation we can switch to a typed `map(object({...}))` and update examples accordingly.
-- Bucket names are globally unique across AWS — prefer predictable suffixes (workspace, env, etc.) or explicitly provide names.
-- Be careful with public buckets; prefer `public_access_block` unless you explicitly need a website or public assets bucket.
+Notes & recommendations
 
-How to validate examples locally
+- The module currently accepts `buckets` as a flexible type (`any`) to make
+  migration from legacy variables easier.
+- Bucket names are global across AWS — prefer unique suffixes (workspace/env) or
+  pass explicit names to avoid conflicts.
+- Keep your buckets private by default: avoid public ACLs/policies and enable
+  Public Access Block unless you need website hosting or public assets.
+
+Where to find more examples and docs
+
+- Bucket submodule: `modules/s3/submodules/bucket/README.md`
+- CloudFront OAC submodule: `modules/s3/submodules/cloudfront_oac/README.md`
+- Verified examples: `examples/s3-basic`, `examples/s3-multi`, `examples/s3-cloudfront-oac`
+
+Validate locally
 
 ```bash
-cd examples/s3-basic
-terraform init -backend=false
-terraform validate
-
-cd ../s3-multi
+cd examples/s3-cloudfront-oac
 terraform init -backend=false
 terraform validate
 ```
-
-License: MIT
