@@ -21,3 +21,47 @@ Create an IAM role, attach managed and inline policies, and optionally create an
 | `role_name` | The created role name. |
 | `role_arn` | The role ARN. |
 | `instance_profile_name` | The instance profile name if created, otherwise null. |
+
+Usage examples
+
+EC2 role + instance profile (SSM)
+
+```hcl
+module "role_ec2" {
+	source = "../../modules/iam/submodules/role"
+
+	name                    = "app-ec2-role"
+	assume_services         = ["ec2.amazonaws.com"]
+	managed_policy_arns     = ["arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"]
+	create_instance_profile = true
+}
+
+# Use in EC2 module
+resource "aws_instance" "example" {
+	# ...
+	iam_instance_profile = module.role_ec2.instance_profile_name
+}
+```
+
+OIDC / EKS role (web identity)
+
+```hcl
+module "role_eks" {
+	source = "../../modules/iam/submodules/role"
+
+	name = "eks-serviceaccount-role"
+	assume_oidc = [
+		{
+			provider   = "arn:aws:iam::123456789012:oidc-provider/oidc.eks.region.amazonaws.com/id/EXAMPLE"
+			conditions = { "oidc.eks.region.amazonaws.com/id/EXAMPLE:sub" = "system:serviceaccount:my-namespace:my-sa" }
+		}
+	]
+	managed_policy_arns = ["arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"]
+}
+
+```
+
+Notes
+
+- If `assume_role_policy` is provided it overrides the generated policy. Use that when you need custom trust JSON.
+- `create_instance_profile` will create an `aws_iam_instance_profile` resource with the same name as the role when true.
