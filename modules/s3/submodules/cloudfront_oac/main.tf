@@ -9,6 +9,13 @@ resource "aws_cloudfront_origin_access_control" "oac" {
   signing_behavior                  = "always"
 }
 
+# Validation: fail early if user requests attaching a bucket policy but doesn't
+# provide required identifiers. Using error() ensures terraform validate/plan
+# surfaces a clear message.
+locals {
+  _attach_policy_check = var.attach_bucket_policy && (trimspace(var.target_bucket_id) == "" || trimspace(var.target_bucket_arn) == "") ? error("When 'attach_bucket_policy' is true you must provide non-empty 'target_bucket_id' and 'target_bucket_arn'.") : true
+}
+
 resource "aws_cloudfront_distribution" "this" {
   count = var.enabled ? 1 : 0
 
