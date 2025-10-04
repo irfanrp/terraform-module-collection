@@ -15,18 +15,14 @@ provider "aws" {
 module "s3" {
   source = "../../modules/s3"
 
-  bucket_name = "tf-module-collection-example-bucket-${var.env_suffix}"
-  acl         = "private"
-
-  versioning_enabled             = true
-  server_side_encryption_enabled = true
-  sse_algorithm                  = "AES256"
-
-  logging_enabled = false
-
-  tags = {
-    Environment = var.environment
-    Project     = var.project_name
+  buckets = {
+    example = {
+      name                   = "tf-module-collection-example-bucket-${var.env_suffix}"
+      acl                    = "private"
+      versioning_enabled     = true
+      server_side_encryption = { type = "SSE-S3" }
+      tags                   = { Environment = var.environment, Project = var.project_name }
+    }
   }
 }
 
