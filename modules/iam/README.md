@@ -1,12 +1,3 @@
-# IAM (wrapper)
-
-Small wrapper module that composes focused IAM submodules: role, policy, user, group and oidc-provider.
-
-Keep this module as a high-level convenience. For advanced use prefer composing the submodules directly.
-
-Why use the wrapper
-- One module call to create roles, instance profiles, standalone policies, users and groups
-- Inputs are maps/lists so you can create many identities/policies in a single call
 # IAM wrapper & submodules
 
 This folder provides a small wrapper (`modules/iam`) that composes focused submodules:

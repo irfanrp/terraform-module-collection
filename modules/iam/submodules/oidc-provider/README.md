@@ -29,7 +29,9 @@ module "oidc_eks" {
 	thumbprint_list = ["9e99a48a9960b14926bb7f3b02e22da0d3b7a3f6"]
 }
 
-output "oidc_arn" { value = module.oidc_eks.oidc_provider_arn }
+output "oidc_arn" { 
+	value = module.oidc_eks.oidc_provider_arn 
+	}
 ```
 
 Multiple providers (compose in a wrapper)
