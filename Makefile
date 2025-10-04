@@ -15,17 +15,20 @@ init: ## Initialize Terraform in all example directories
 		cd "$$dir" && terraform init && cd ../..; \
 	done
 
+
 validate: ## Validate Terraform configuration
 	@echo "✅ Validating Terraform configuration..."
-	@for dir in examples/*/; do \
-		echo "Validating $$dir"; \
-		cd "$$dir" && terraform validate && cd ../..; \
+	@for dir in examples/*; do \
+		if [ -d "$$dir" ]; then \
+			echo "Validating $$dir"; \
+			( cd "$$dir" && terraform init -backend=false > /dev/null 2>&1 || true; terraform validate ); \
+		fi; \
 	done
 	@for dir in modules/*/; do \
 		if [ -f "$$dir/main.tf" ]; then \
 			echo "Validating $$dir"; \
-			cd "$$dir" && terraform init -backend=false && terraform validate && cd ../..; \
-		fi \
+			( cd "$$dir" && terraform init -backend=false > /dev/null 2>&1 || true; terraform validate ); \
+		fi; \
 	done
 
 fmt: ## Format Terraform files
