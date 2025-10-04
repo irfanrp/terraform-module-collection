@@ -10,6 +10,12 @@ variable "bucket_names" {
   default     = []
 }
 
+variable "buckets" {
+  description = "Map of bucket_key => bucket configuration object. Preferred interface for multi-bucket usage. See module README for shape."
+  type        = any
+  default     = {}
+}
+
 variable "acl" {
   description = "Canned ACL for the bucket. Leave empty (null) to avoid setting an ACL on the bucket (recommended)."
   type        = string
