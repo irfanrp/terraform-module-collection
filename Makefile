@@ -1,4 +1,4 @@
-.PHONY: help init plan apply destroy validate fmt lint clean test docs
+.PHONY: help init plan apply destroy validate fmt lint clean test docs quick-test
 
 # Default target
 help: ## Show this help message
@@ -105,3 +105,9 @@ vpc-apply: ## Apply VPC example
 
 vpc-destroy: ## Destroy VPC example
 	@cd examples/vpc-basic && terraform destroy
+
+quick-test: ## Quick syntax validation (fastest)
+	@echo "⚡ Quick syntax test..."
+	@terraform fmt -check -recursive . || (echo "❌ Format check failed. Run 'make fmt' to fix." && exit 1)
+	@echo "ℹ️  Running validate..."
+	@$(MAKE) validate
