@@ -2,13 +2,16 @@ name: CI
 
 on:
   push:
-    branches: [ "master"]
+    branches: [ "master", "main" ]
   pull_request:
-    branches: [ "master"]
+    branches: [ "master", "main" ]
+
+permissions:
+  contents: read
 
 jobs:
-  checks:
-    name: Lint, Format & Security
+  validate:
+    name: Format & Validate
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -17,56 +20,44 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
 
+      - name: Cache terraform providers
+        uses: actions/cache@v4
+        with:
+          path: |
+            .terraform/providers
+            .terraform.lock.hcl
+          key: ${{ runner.os }}-tf-providers-${{ hashFiles('**/.terraform.lock.hcl') }}
+          restore-keys: |
+            ${{ runner.os }}-tf-providers-
+
       - name: Run quick-test (format + validate)
         run: make quick-test
 
-      - name: Install tfsec (Linux)
-        if: runner.os == 'Linux'
-        run: |
-          set -e
-          echo "Installing tfsec (linux) via release binary..."
-          LATEST_URL="https://github.com/aquasecurity/tfsec/releases/latest/download/tfsec-linux-amd64"
-          curl -sSL "$LATEST_URL" -o /usr/local/bin/tfsec
-          chmod +x /usr/local/bin/tfsec
-          tfsec --version
-
-      - name: Install tfsec (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          echo "Installing tfsec via Homebrew..."
-          brew install tfsec || brew upgrade tfsec || true
-          tfsec --version
-
-      - name: Run tfsec (security scan)
-        run: |
-          echo "Running tfsec on repository..."
-          mkdir -p .github/artifacts
-          tfsec --format junit --out .github/artifacts/tfsec-results.xml || true
-          tfsec || true
-
-      - name: Upload tfsec result
+      - name: Upload quick-test log
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tfsec-results
-          path: .github/artifacts/tfsec-results.xml
+          name: quick-test
+          path: .github/artifacts/quick-test.txt
+
+  tflint:
+    name: TFLint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Install tflint
         run: |
-          echo "Installing tflint..."
-          curl -sSL https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash -s -- -b /usr/local/bin
-          tflint --version || true
+          curl -sSL https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash -s -- -b $HOME/.local/bin
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Run tflint
         run: |
-          echo "Running tflint..."
           mkdir -p .github/artifacts
-          # Initialize tflint (plugins) if .tflint.hcl references them
           tflint --init || true
-          # tflint doesn't support --out; capture junit XML from stdout
           tflint --format junit > .github/artifacts/tflint-results.xml || true
-          # Run tflint again to show human-readable output (optional)
-          tflint || true
+        continue-on-error: true
 
       - name: Upload tflint result
         if: always()
@@ -75,18 +66,47 @@ jobs:
           name: tflint-results
           path: .github/artifacts/tflint-results.xml
 
+  tfsec:
+    name: tfsec
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install tfsec
+        run: |
+          echo "Installing tfsec (linux) via release binary..."
+          LATEST_URL="https://github.com/aquasecurity/tfsec/releases/latest/download/tfsec-linux-amd64"
+          curl -sSL "$LATEST_URL" -o /usr/local/bin/tfsec
+          chmod +x /usr/local/bin/tfsec
+
+      - name: Run tfsec
+        run: |
+          mkdir -p .github/artifacts
+          tfsec --format junit --out .github/artifacts/tfsec-results.xml || true
+
+      - name: Upload tfsec result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfsec-results
+          path: .github/artifacts/tfsec-results.xml
+
+  checkov:
+    name: Checkov
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Install Checkov
         run: |
-          echo "Installing Checkov..."
           python3 -m pip install --upgrade pip
           python3 -m pip install checkov
-          checkov --version || true
 
-      - name: Run Checkov (Terraform)
+      - name: Run Checkov
         run: |
-          echo "Running Checkov on Terraform files..."
           mkdir -p .github/artifacts
-          # Run checkov scanning only terraform files in repository
           checkov -d . -o junitxml > .github/artifacts/checkov-results.xml || true
 
       - name: Upload Checkov result
@@ -95,9 +115,3 @@ jobs:
         with:
           name: checkov-results
           path: .github/artifacts/checkov-results.xml
-
-      - name: Upload quick-test log
-        if: always()
-        run: |
-          mkdir -p .github/artifacts || true
-          echo "quick-test finished" > .github/artifacts/quick-test.txt
