@@ -19,7 +19,6 @@ permissions:
 jobs:
   summarize:
     name: Summarize PR and give suggestions (feature/* -> master)
-    # Only run if base is master and head branch starts with feature/
     if: github.event.pull_request.base.ref == 'master' && startsWith(github.head_ref, 'feature/')
     runs-on: ubuntu-latest
     steps:
@@ -41,7 +40,7 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install deps and run PR summarizer (skips if GEMINI_API_KEY not set)
+      - name: Install deps and run PR summarizer (uses GEMINI_API_KEY)
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.TOKEN_GITHUB }}
@@ -53,70 +52,29 @@ jobs:
             echo "[INFO] GEMINI_API_KEY not set — skipping AI summarization";
             exit 0;
           fi
+          echo "[INFO] Validating GEMINI_API_KEY..."
+          code=$(curl -s -o /dev/null -w "%{http_code}" -H "Content-Type: application/json" -d '{"prompt":{"text":"test"},"maxOutputTokens":1}' "https://generativelanguage.googleapis.com/v1beta2/models/text-bison-001:generateText?key=$GEMINI_API_KEY" || true)
+          if [ "$code" != "200" ]; then
+            echo "[ERROR] GEMINI_API_KEY validation failed (HTTP $code). Writing ai-summary.md with details."
+            printf '%s\n' \
+              "Generative API key validation failed (HTTP $code)." \
+              "" \
+              "Possible reasons:" \
+              "- The key is invalid or expired." \
+              "- The Generative Language API is not enabled for the key's project." \
+              "- The key is restricted (API restrictions) and cannot call the generativelanguage API." \
+              "" \
+              "Please verify your \`GEMINI_API_KEY\` repository secret contains a valid Google Generative API key. This run will skip the AI summarization." \
+              > ai-summary.md
+            exit 0
+          fi
+          echo "[INFO] GEMINI_API_KEY validated. Proceeding."
           echo "[INFO] Using PR_NUMBER='${PR_NUMBER}' (empty means artifact-only mode)."
           echo "[INFO] Diff size: $(wc -c < pr.diff) bytes"
 
-          cat > pr-summarizer.js <<'NODE'
-          const fs = require('fs');
-          const fetch = require('node-fetch');
-
-          const diff = fs.readFileSync('pr.diff','utf8');
-          // Truncate diff if huge
-          const truncated = diff.length > 60000 ? diff.slice(0,60000) + '\n...[truncated]...' : diff;
-          const prompt = `You are an expert Terraform reviewer. Summarize the following diff and list EXACTLY 3 actionable suggestions (security, best-practices, docs). Be concise.\n\n${truncated}`;
-
-          const MODEL = 'text-bison-001';
-
-          async function run(){
-            // Google Generative API (text-bison) expects the API key as a query param
-            const url = `https://generativelanguage.googleapis.com/v1beta2/models/${MODEL}:generateText?key=${process.env.GEMINI_API_KEY}`;
-            const payload = {
-              prompt: { text: prompt },
-              temperature: 0.3,
-              maxOutputTokens: 512
-            };
-
-            const res = await fetch(url, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload)
-            });
-            const body = await res.json();
-            if(res.status >= 400){
-              console.error('Model API error', res.status, body);
-              fs.writeFileSync('ai-summary.md', 'Model API error '+res.status+'\n'+JSON.stringify(body,null,2));
-              return;
-            }
-
-            // text-bison returns candidates array with output text
-            const text = body?.candidates?.[0]?.output || JSON.stringify(body);
-            const prNumber = (process.env.PR_NUMBER||'').trim();
-            const comment = `### 🤖 AI PR Summary\n\n${text}\n\n---\n_Diff chars: ${diff.length} (truncated: ${diff.length !== truncated.length})_`;
-            fs.writeFileSync('ai-summary.md', comment);
-            if(!prNumber){
-              console.log('No PR number provided, skipping posting comment.');
-              return;
-            }
-            const ghRes = await fetch(`https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/issues/${prNumber}/comments`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `token ${process.env.SECRET_GITHUB}`
-              },
-              body: JSON.stringify({ body: comment })
-            });
-            console.log('Posted comment status', ghRes.status);
-            if(ghRes.status === 404){
-              console.warn('Received 404 – likely invalid PR or permissions.');
-            }
-          }
-
-          run().catch(e=>{ console.error(e); process.exit(1); });
-          NODE
-
           npm init -y >/dev/null
           npm i node-fetch@2 >/dev/null
-          node pr-summarizer.js
+          node .github/scripts/pr-summarizer.js
 
       - name: Upload AI summary artifact
         if: always()
@@ -124,3 +82,4 @@ jobs:
         with:
           name: ai-summary
           path: ai-summary.md
+      
