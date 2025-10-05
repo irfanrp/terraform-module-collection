@@ -19,7 +19,9 @@ module "rds" {
   password = var.db_password
 
   vpc_security_group_ids = [module.sg.security_group_id]
-  db_subnet_group_name   = module.vpc.database_subnet_group_name
+  # Either pass an existing DB subnet group name, or provide subnet IDs and the module will create a DB subnet group
+  # db_subnet_group_name   = module.vpc.database_subnet_group_name
+  db_subnet_ids = module.vpc.private_subnet_ids
 
   tags = {
     Environment = "dev"

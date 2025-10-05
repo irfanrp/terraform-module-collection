@@ -41,7 +41,7 @@ module "rds" {
   username               = "admin"
   password               = "examplepassword"
   vpc_security_group_ids = [module.sg.security_group_id]
-  db_subnet_group_name   = module.vpc.database_subnet_group_name
+  db_subnet_ids          = module.vpc.private_subnet_ids
   tags = {
     Environment = "dev"
   }

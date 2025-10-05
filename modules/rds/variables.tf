@@ -56,6 +56,24 @@ variable "db_subnet_group_name" {
   default     = null
 }
 
+variable "db_subnet_ids" {
+  description = "List of subnet IDs for DB subnet group (optional)"
+  type        = list(string)
+  default     = []
+}
+
+variable "publicly_accessible" {
+  description = "Whether DB instance is publicly accessible"
+  type        = bool
+  default     = false
+}
+
+variable "skip_final_snapshot" {
+  description = "Skip final snapshot on destroy"
+  type        = bool
+  default     = true
+}
+
 variable "backup_retention_period" {
   description = "Backup retention days"
   type        = number
