@@ -27,8 +27,7 @@ CHANGED=/tmp/ch_changed.txt
 FIXED=/tmp/ch_fixed.txt
 DOCS=/tmp/ch_docs.txt
 SEC=/tmp/ch_security.txt
-OTHER=/tmp/ch_other.txt
-: > $ADDED; : > $CHANGED; : > $FIXED; : > $DOCS; : > $SEC; : > $OTHER
+: > $ADDED; : > $CHANGED; : > $FIXED; : > $DOCS; : > $SEC
 
 # Collect commits in range but only those touching modules/ or examples/
 COMMITS=$(git rev-list --reverse ${RANGE} -- modules/ examples/ || true)
@@ -64,7 +63,8 @@ for c in $COMMITS; do
   elif echo "$lc" | grep -qE '^chore|^refactor|^perf|^ci|^build|^style|^test|^change'; then
     echo "$line" >> $CHANGED
   else
-    echo "$line" >> $OTHER
+    # Skip uncategorized / generic changes (do not include an 'Other' section)
+    continue
   fi
 done
 
@@ -73,7 +73,7 @@ if [ -s $CHANGED ]; then echo "### Changed" >> "$OUT"; sort -u $CHANGED >> "$OUT
 if [ -s $FIXED ]; then echo "### Fixed" >> "$OUT"; sort -u $FIXED >> "$OUT"; echo >> "$OUT"; fi
 if [ -s $DOCS ]; then echo "### Docs" >> "$OUT"; sort -u $DOCS >> "$OUT"; echo >> "$OUT"; fi
 if [ -s $SEC ]; then echo "### Security" >> "$OUT"; sort -u $SEC >> "$OUT"; echo >> "$OUT"; fi
-if [ -s $OTHER ]; then echo "### Other" >> "$OUT"; sort -u $OTHER >> "$OUT"; echo >> "$OUT"; fi
+# 'Other' section intentionally omitted to keep changelog focused
 
 echo >> "$OUT"
 if [ -n "$PREV_TAG" ]; then
