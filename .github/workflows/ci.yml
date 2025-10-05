@@ -68,6 +68,22 @@ jobs:
           name: tflint-results
           path: .github/artifacts/tflint-results.xml
 
+      - name: Add tflint summary to job summary
+        if: always()
+        run: |
+          FILE=.github/artifacts/tflint-results.xml
+          if [ -f "$FILE" ]; then
+            COUNT=$(grep -c "<failure" "$FILE" || true)
+            echo "### TFLint" >> $GITHUB_STEP_SUMMARY || true
+            echo "- Issues found: ${COUNT}" >> $GITHUB_STEP_SUMMARY || true
+            echo "- Results artifact: $FILE" >> $GITHUB_STEP_SUMMARY || true
+            echo "" >> $GITHUB_STEP_SUMMARY || true
+          else
+            echo "### TFLint" >> $GITHUB_STEP_SUMMARY || true
+            echo "- No results file found" >> $GITHUB_STEP_SUMMARY || true
+            echo "" >> $GITHUB_STEP_SUMMARY || true
+          fi
+
   tfsec:
     needs: format-validate
     name: tfsec
@@ -95,6 +111,22 @@ jobs:
           name: tfsec-results
           path: .github/artifacts/tfsec-results.xml
 
+      - name: Add tfsec summary to job summary
+        if: always()
+        run: |
+          FILE=.github/artifacts/tfsec-results.xml
+          if [ -f "$FILE" ]; then
+            COUNT=$(grep -c "<failure" "$FILE" || true)
+            echo "### tfsec" >> $GITHUB_STEP_SUMMARY || true
+            echo "- Issues found: ${COUNT}" >> $GITHUB_STEP_SUMMARY || true
+            echo "- Results artifact: $FILE" >> $GITHUB_STEP_SUMMARY || true
+            echo "" >> $GITHUB_STEP_SUMMARY || true
+          else
+            echo "### tfsec" >> $GITHUB_STEP_SUMMARY || true
+            echo "- No results file found" >> $GITHUB_STEP_SUMMARY || true
+            echo "" >> $GITHUB_STEP_SUMMARY || true
+          fi
+
   checkov:
     needs: format-validate
     name: Checkov
@@ -111,4 +143,20 @@ jobs:
       - name: Run Checkov
         run: |
             checkov -d . -o junitxml > .github/artifacts/checkov-results.xml || true
+
+      - name: Add Checkov summary to job summary
+        if: always()
+        run: |
+          FILE=.github/artifacts/checkov-results.xml
+          if [ -f "$FILE" ]; then
+            COUNT=$(grep -c "<failure" "$FILE" || true)
+            echo "### Checkov" >> $GITHUB_STEP_SUMMARY || true
+            echo "- Issues found: ${COUNT}" >> $GITHUB_STEP_SUMMARY || true
+            echo "- Results artifact: $FILE" >> $GITHUB_STEP_SUMMARY || true
+            echo "" >> $GITHUB_STEP_SUMMARY || true
+          else
+            echo "### Checkov" >> $GITHUB_STEP_SUMMARY || true
+            echo "- No results file found" >> $GITHUB_STEP_SUMMARY || true
+            echo "" >> $GITHUB_STEP_SUMMARY || true
+          fi
 

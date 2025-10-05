@@ -21,92 +21,13 @@ jobs:
       - name: Fetch tags
         run: git fetch --tags --prune
 
-      - name: Install git-cliff (optional)
-        run: |
-          curl https://sh.rustup.rs -sSf | sh -s -- -y
-          source $HOME/.cargo/env
-          cargo install git-cliff --locked || true
-
       - name: Compute changelog
         id: changelog
         run: |
-          REPO=${GITHUB_REPOSITORY}
           TAG=${{ github.event.release.tag_name }}
-          PREV_TAG=$(git tag --sort=-creatordate | grep -v "^$TAG$" | head -n1 || true)
-          if [ -z "$PREV_TAG" ]; then
-            RANGE="$TAG"
-          else
-            RANGE="$PREV_TAG..$TAG"
-          fi
-          NEW=/tmp/new_changelog.md
-          echo "## ${TAG} - $(date -u +%Y-%m-%d)" > $NEW
-          echo "" >> $NEW
-          if command -v git-cliff >/dev/null 2>&1; then
-            # Use git-cliff for full conventional output, then simplify slightly
-            git-cliff --tag $TAG --output /tmp/gitcliff_full.md || true
-            # If git-cliff produced output, use it; otherwise fallback
-            if [ -s /tmp/gitcliff_full.md ]; then
-              cat /tmp/gitcliff_full.md >> $NEW || true
-            fi
-          fi
-          # If NEW is still minimal, or git-cliff not present, produce a simple grouped list
-          if [ ! -s $NEW ] || [ $(wc -c < $NEW) -lt 50 ]; then
-            ADDED_FILE=/tmp/ch_added.txt
-            CHANGED_FILE=/tmp/ch_changed.txt
-            FIXED_FILE=/tmp/ch_fixed.txt
-            DOCS_FILE=/tmp/ch_docs.txt
-            SECURITY_FILE=/tmp/ch_security.txt
-            OTHER_FILE=/tmp/ch_other.txt
-            : > $ADDED_FILE; : > $CHANGED_FILE; : > $FIXED_FILE; : > $DOCS_FILE; : > $SECURITY_FILE; : > $OTHER_FILE
-
-            COMMITS=$(git rev-list --reverse ${RANGE})
-            for c in $COMMITS; do
-              files=$(git diff-tree --no-commit-id --name-only -r $c || true)
-              if ! echo "$files" | grep -qE '^(modules/|examples/)'; then
-                continue
-              fi
-              subject=$(git show -s --format='%s' $c)
-              # Extract PR number like (#123) or #123
-              pr=$(echo "$subject" | grep -oE '\(#[0-9]+\)|#[0-9]+' | head -n1 || true)
-              if [ -n "$pr" ]; then
-                prnum=$(echo "$pr" | tr -d '()#')
-                prlink=" ([#${prnum}](https://github.com/${REPO}/pull/${prnum}))"
-                # remove PR token from subject for cleanliness
-                subject=$(echo "$subject" | sed -E 's/ ?\(?#?[0-9]+\)?$//')
-              else
-                prlink=""
-              fi
-              line="- ${subject}${prlink}"
-              lc=$(echo "$subject" | awk '{print tolower($0)}')
-              if echo "$lc" | grep -qE '^feat|^feature'; then
-                echo "$line" >> $ADDED_FILE
-              elif echo "$lc" | grep -qE '^fix|^bugfix'; then
-                echo "$line" >> $FIXED_FILE
-              elif echo "$lc" | grep -qE '^docs|^documentation'; then
-                echo "$line" >> $DOCS_FILE
-              elif echo "$lc" | grep -qE '^security|^sec'; then
-                echo "$line" >> $SECURITY_FILE
-              elif echo "$lc" | grep -qE '^chore|^refactor|^perf|^ci|^build|^style|^test|^change'; then
-                echo "$line" >> $CHANGED_FILE
-              else
-                echo "$line" >> $OTHER_FILE
-              fi
-            done
-
-            if [ -s $ADDED_FILE ]; then echo "### Added" >> $NEW; sort -u $ADDED_FILE >> $NEW; echo "" >> $NEW; fi
-            if [ -s $CHANGED_FILE ]; then echo "### Changed" >> $NEW; sort -u $CHANGED_FILE >> $NEW; echo "" >> $NEW; fi
-            if [ -s $FIXED_FILE ]; then echo "### Fixed" >> $NEW; sort -u $FIXED_FILE >> $NEW; echo "" >> $NEW; fi
-            if [ -s $DOCS_FILE ]; then echo "### Docs" >> $NEW; sort -u $DOCS_FILE >> $NEW; echo "" >> $NEW; fi
-            if [ -s $SECURITY_FILE ]; then echo "### Security" >> $NEW; sort -u $SECURITY_FILE >> $NEW; echo "" >> $NEW; fi
-            if [ -s $OTHER_FILE ]; then echo "### Other" >> $NEW; sort -u $OTHER_FILE >> $NEW; echo "" >> $NEW; fi
-          fi
-          # Add link references
-          echo "" >> $NEW
-          if [ -n "$PREV_TAG" ]; then
-            echo "[${PREV_TAG}...${TAG}]: https://github.com/${REPO}/compare/${PREV_TAG}...${TAG}" >> $NEW
-          fi
-          echo "[${TAG}]: https://github.com/${REPO}/releases/tag/${TAG}" >> $NEW
-          echo "newfile=$NEW" >> $GITHUB_OUTPUT
+          chmod +x .github/scripts/generate_changelog.sh
+          OUT=$(./.github/scripts/generate_changelog.sh "$TAG" /tmp/new_changelog.md)
+          echo "newfile=$OUT" >> $GITHUB_OUTPUT
           echo "tag=$TAG" >> $GITHUB_OUTPUT
 
       - name: Write changelog into repository and push
