@@ -44,7 +44,7 @@ jobs:
       - name: Install deps and run PR summarizer (skips if GEMINI_API_KEY not set)
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          SECRET_GITHUB: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.TOKEN_GITHUB }}
           PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
           GITHUB_EVENT_NAME: ${{ github.event_name }}
         run: |
@@ -65,19 +65,21 @@ jobs:
           const truncated = diff.length > 60000 ? diff.slice(0,60000) + '\n...[truncated]...' : diff;
           const prompt = `You are an expert Terraform reviewer. Summarize the following diff and list EXACTLY 3 actionable suggestions (security, best-practices, docs). Be concise.\n\n${truncated}`;
 
+          const MODEL = 'text-bison-001';
+
           async function run(){
-            const res = await fetch('https://api.openai.com/v1/chat/completions', {
+            // Google Generative API (text-bison) expects the API key as a query param
+            const url = `https://generativelanguage.googleapis.com/v1beta2/models/${MODEL}:generateText?key=${process.env.GEMINI_API_KEY}`;
+            const payload = {
+              prompt: { text: prompt },
+              temperature: 0.3,
+              maxOutputTokens: 512
+            };
+
+            const res = await fetch(url, {
               method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${process.env.GEMINI_API_KEY}`
-              },
-              body: JSON.stringify({
-                model: 'gpt-4o-mini',
-                messages: [{role: 'user', content: prompt}],
-                max_tokens: 650,
-                temperature: 0.3
-              })
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
             });
             const body = await res.json();
             if(res.status >= 400){
@@ -85,7 +87,9 @@ jobs:
               fs.writeFileSync('ai-summary.md', 'Model API error '+res.status+'\n'+JSON.stringify(body,null,2));
               return;
             }
-            const text = body.choices?.[0]?.message?.content || JSON.stringify(body);
+
+            // text-bison returns candidates array with output text
+            const text = body?.candidates?.[0]?.output || JSON.stringify(body);
             const prNumber = (process.env.PR_NUMBER||'').trim();
             const comment = `### 🤖 AI PR Summary\n\n${text}\n\n---\n_Diff chars: ${diff.length} (truncated: ${diff.length !== truncated.length})_`;
             fs.writeFileSync('ai-summary.md', comment);
