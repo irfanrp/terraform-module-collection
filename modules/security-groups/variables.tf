@@ -31,7 +31,7 @@ variable "ingress" {
 
 variable "egress" {
   description = "List of egress rules (same shape as ingress)"
-  type        = list(object({
+  type = list(object({
     from_port        = number
     to_port          = number
     protocol         = string
