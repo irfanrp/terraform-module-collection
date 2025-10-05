@@ -125,6 +125,12 @@ variable "tenancy" {
   }
 }
 
+variable "spot_enabled" {
+  description = "Whether to launch instances as EC2 Spot instances"
+  type        = bool
+  default     = false
+}
+
 variable "tags" {
   description = "Tags to apply to resources"
   type        = map(string)
@@ -135,4 +141,10 @@ variable "private_ip_addresses" {
   description = "Optional list of private IP addresses to assign to instances. If provided, instances will receive IPs by round-robin from this list. Leave empty to let AWS auto-assign private IPs."
   type        = list(string)
   default     = []
+}
+
+variable "private_ip" {
+  description = "Private IP address to associate with the instance in a VPC"
+  type        = string
+  default     = null
 }

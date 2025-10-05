@@ -41,9 +41,11 @@ module "ec2" {
 | associate_public_ip | Whether to associate a public IP | bool | true | no |
 | create_ssm_instance_profile | Create and attach SSM instance profile for Session Manager | bool | true | no |
 | ssm_instance_profile_name | Optional name for the SSM instance profile | string | null | no |
+| spot_enabled | Whether to launch instances as EC2 Spot instances | bool | false | no |
 | key_name | Name of the AWS key pair for SSH access | string | null | no |
 | user_data | User data script to run on instance startup (plain text) | string | null | no |
 | user_data_base64 | Base64 encoded user data | string | null | no |
+| private_ip | Private IP address to associate with the instance in a VPC | string | null | no |
 | tags | Tags to apply to resources | map(string) | {} | no |
 
 ## Outputs
