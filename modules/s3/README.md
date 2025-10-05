@@ -30,8 +30,15 @@ module "s3" {
     public_assets = {
       name = "company-public-assets"
       acl  = "public-read"
-      cors_rules = [ { allowed_methods = ["GET"], allowed_origins = ["*"] } ]
-      tags = { env = "prod" }
+      cors_rules = [ 
+        {
+          allowed_methods = ["GET"], 
+          allowed_origins = ["*"] 
+        }
+      ]
+      tags = { 
+        env = "prod"
+      }
     }
   }
 }
