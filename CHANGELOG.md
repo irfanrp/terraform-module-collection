@@ -1,15 +1,3 @@
-## v0.0.2 - 2025-10-05
-
-### Added
-- feat: Add AWS RDS snapshot export module with S3 bucket and IAM role configuration (by Irfan Rizkianto Pratama)
-
-### Changed
-- chore: Remove release drafter configuration files and clean up S3 bucket ACL formatting (by Irfan Rizkianto Pratama)
-
-
-[v0.0.1-final...v0.0.2]: https://github.com/irfanrp/terraform-module-collection/compare/v0.0.1-final...v0.0.2
-[v0.0.2]: https://github.com/irfanrp/terraform-module-collection/releases/tag/v0.0.2
-
 ## v0.0.3 - 2025-10-05
 # Changelog
 
