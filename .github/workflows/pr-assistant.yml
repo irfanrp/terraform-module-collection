@@ -41,16 +41,16 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install deps and run PR summarizer (skips if OPENAI_API_KEY not set)
+      - name: Install deps and run PR summarizer (skips if GEMINI_API_KEY not set)
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           SECRET_GITHUB: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
           GITHUB_EVENT_NAME: ${{ github.event_name }}
         run: |
           set -e
-          if [ -z "$OPENAI_API_KEY" ]; then
-            echo "[INFO] OPENAI_API_KEY not set — skipping AI summarization";
+          if [ -z "$GEMINI_API_KEY" ]; then
+            echo "[INFO] GEMINI_API_KEY not set — skipping AI summarization";
             exit 0;
           fi
           echo "[INFO] Using PR_NUMBER='${PR_NUMBER}' (empty means artifact-only mode)."
@@ -61,7 +61,7 @@ jobs:
           const fetch = require('node-fetch');
 
           const diff = fs.readFileSync('pr.diff','utf8');
-            // Truncate diff if huge
+          // Truncate diff if huge
           const truncated = diff.length > 60000 ? diff.slice(0,60000) + '\n...[truncated]...' : diff;
           const prompt = `You are an expert Terraform reviewer. Summarize the following diff and list EXACTLY 3 actionable suggestions (security, best-practices, docs). Be concise.\n\n${truncated}`;
 
@@ -70,7 +70,7 @@ jobs:
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+                'Authorization': `Bearer ${process.env.GEMINI_API_KEY}`
               },
               body: JSON.stringify({
                 model: 'gpt-4o-mini',
@@ -81,8 +81,8 @@ jobs:
             });
             const body = await res.json();
             if(res.status >= 400){
-              console.error('OpenAI error', res.status, body);
-              fs.writeFileSync('ai-summary.md', 'OpenAI error '+res.status+'\n'+JSON.stringify(body,null,2));
+              console.error('Model API error', res.status, body);
+              fs.writeFileSync('ai-summary.md', 'Model API error '+res.status+'\n'+JSON.stringify(body,null,2));
               return;
             }
             const text = body.choices?.[0]?.message?.content || JSON.stringify(body);
