@@ -1,4 +1,5 @@
 const fs = require('fs');
+const fetch = require('node-fetch');
 
 async function run() {
   try {
@@ -13,23 +14,36 @@ async function run() {
     }
 
     const diff = fs.existsSync('pr.diff') ? fs.readFileSync('pr.diff', 'utf8') : '';
+    
+    // Handle case where diff is empty or very small
+    if (!diff || diff.trim().length === 0) {
+      const comment = `### 🤖 AI PR Summary\n\nNo changes detected in this PR diff. This may be due to:\n- Empty commit or rebase\n- Binary file changes only\n- Git diff generation issues\n\nPlease verify the PR contains the expected changes.`;
+      fs.writeFileSync('ai-summary.md', comment);
+      console.log('[INFO] No diff content found, wrote basic summary to ai-summary.md');
+      return;
+    }
+    
     const truncated = diff.length > 60000 ? diff.slice(0, 60000) + '\n...[truncated]...' : diff;
     const prompt = `You are an expert Terraform reviewer. Summarize the following diff and list EXACTLY 3 actionable suggestions (security, best-practices, docs). Be concise.\n\n${truncated}`;
 
-  // Using gemini-2.5-flash model as requested. Change MODEL if your key/project exposes a different variant (e.g. gemini-2.5-flash).
+  // Use the generateContent endpoint (contents.parts) which matches the working curl you ran locally.
   const MODEL = 'gemini-2.5-flash';
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateText?key=${GEMINI_API_KEY}`;
-    const payload = { prompt: { text: prompt }, temperature: 0.3, maxOutputTokens: 512 };
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+  // `temperature` is not accepted by the generateContent endpoint in some API versions; keep payload minimal.
+  const payload = { contents: [{ parts: [{ text: prompt }] }] };
 
-    const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-    const body = await res.json();
-    if (res.status >= 400) {
-      console.error('Model API error', res.status, body);
-      fs.writeFileSync('ai-summary.md', 'Model API error ' + res.status + '\n' + JSON.stringify(body, null, 2));
-      return;
-    }
+  const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+  const body = await res.json();
+  if (res.status >= 400) {
+    console.error('Model API error', res.status, body);
+    fs.writeFileSync('ai-summary.md', 'Model API error ' + res.status + '\n' + JSON.stringify(body, null, 2));
+    return;
+  }
 
-    const text = body?.candidates?.[0]?.output || JSON.stringify(body);
+  // Extract text from candidates[].content.parts[].text
+  const text = (body && body.candidates && body.candidates[0] && body.candidates[0].content && body.candidates[0].content.parts)
+    ? body.candidates[0].content.parts.map(p => p.text).join('\n')
+    : JSON.stringify(body);
     const comment = `### 🤖 AI PR Summary\n\n${text}\n\n---\n_Diff chars: ${diff.length} (truncated: ${diff.length !== truncated.length})_`;
     fs.writeFileSync('ai-summary.md', comment);
 

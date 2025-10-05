@@ -53,19 +53,27 @@ jobs:
             exit 0;
           fi
           echo "[INFO] Validating GEMINI_API_KEY..."
-          code=$(curl -s -o /dev/null -w "%{http_code}" -H "Content-Type: application/json" -d '{"prompt":{"text":"test"},"maxOutputTokens":1}' "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateText?key=$GEMINI_API_KEY" || true)
+          # Capture both body and HTTP code so we can inspect the API error in the artifact without leaking the key
+          response=$(curl -s -w "\n%{http_code}" -H "Content-Type: application/json" -d '{"contents":[{"parts":[{"text":"test"}]}]}' "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$GEMINI_API_KEY" || true)
+          code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
           if [ "$code" != "200" ]; then
             echo "[ERROR] GEMINI_API_KEY validation failed (HTTP $code). Writing ai-summary.md with details."
             printf '%s\n' \
               "Generative API key validation failed (HTTP $code)." \
               "" \
+              "API response body (for debugging):" \
+              "$body" \
+              "" \
               "Possible reasons:" \
               "- The key is invalid or expired." \
               "- The Generative Language API is not enabled for the key's project." \
-              "- The key is restricted (API restrictions) and cannot call the generativelanguage API." \
+              "- Billing is not enabled for the key's project." \
+              "- The key is restricted (Application/API restrictions) and cannot call the generativelanguage API from GitHub Actions." \
               "" \
-              "Please verify your \`GEMINI_API_KEY\` repository secret contains a valid Google Generative API key. This run will skip the AI summarization." \
+              "Please verify your \`GEMINI_API_KEY\` repository secret contains a valid Google Generative API key and try again. This run will skip the AI summarization." \
               > ai-summary.md
+            echo "[INFO] Wrote ai-summary.md with API response for debugging."
             exit 0
           fi
           echo "[INFO] GEMINI_API_KEY validated. Proceeding."
