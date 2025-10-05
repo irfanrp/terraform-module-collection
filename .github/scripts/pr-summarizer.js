@@ -1,4 +1,5 @@
 const fs = require('fs');
+const fetch = require('node-fetch');
 
 async function run() {
   try {
@@ -13,6 +14,15 @@ async function run() {
     }
 
     const diff = fs.existsSync('pr.diff') ? fs.readFileSync('pr.diff', 'utf8') : '';
+    
+    // Handle case where diff is empty or very small
+    if (!diff || diff.trim().length === 0) {
+      const comment = `### 🤖 AI PR Summary\n\nNo changes detected in this PR diff. This may be due to:\n- Empty commit or rebase\n- Binary file changes only\n- Git diff generation issues\n\nPlease verify the PR contains the expected changes.`;
+      fs.writeFileSync('ai-summary.md', comment);
+      console.log('[INFO] No diff content found, wrote basic summary to ai-summary.md');
+      return;
+    }
+    
     const truncated = diff.length > 60000 ? diff.slice(0, 60000) + '\n...[truncated]...' : diff;
     const prompt = `You are an expert Terraform reviewer. Summarize the following diff and list EXACTLY 3 actionable suggestions (security, best-practices, docs). Be concise.\n\n${truncated}`;
 
