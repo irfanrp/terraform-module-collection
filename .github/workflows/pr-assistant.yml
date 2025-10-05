@@ -53,7 +53,7 @@ jobs:
             exit 0;
           fi
           echo "[INFO] Validating GEMINI_API_KEY..."
-          code=$(curl -s -o /dev/null -w "%{http_code}" -H "Content-Type: application/json" -d '{"prompt":{"text":"test"},"maxOutputTokens":1}' "https://generativelanguage.googleapis.com/v1beta2/models/gemini-2.5:generateText?key=$GEMINI_API_KEY" || true)
+          code=$(curl -s -o /dev/null -w "%{http_code}" -H "Content-Type: application/json" -d '{"prompt":{"text":"test"},"maxOutputTokens":1}' "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateText?key=$GEMINI_API_KEY" || true)
           if [ "$code" != "200" ]; then
             echo "[ERROR] GEMINI_API_KEY validation failed (HTTP $code). Writing ai-summary.md with details."
             printf '%s\n' \
