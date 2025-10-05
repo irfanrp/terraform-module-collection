@@ -16,9 +16,9 @@ async function run() {
     const truncated = diff.length > 60000 ? diff.slice(0, 60000) + '\n...[truncated]...' : diff;
     const prompt = `You are an expert Terraform reviewer. Summarize the following diff and list EXACTLY 3 actionable suggestions (security, best-practices, docs). Be concise.\n\n${truncated}`;
 
-  // Using Gemini 2.5 model as requested. Change MODEL if your key/project exposes a different variant (e.g. gemini-2.5-flash).
-  const MODEL = 'gemini-2.5';
-  const url = `https://generativelanguage.googleapis.com/v1beta2/models/${MODEL}:generateText?key=${GEMINI_API_KEY}`;
+  // Using gemini-2.5-flash model as requested. Change MODEL if your key/project exposes a different variant (e.g. gemini-2.5-flash).
+  const MODEL = 'gemini-2.5-flash';
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateText?key=${GEMINI_API_KEY}`;
     const payload = { prompt: { text: prompt }, temperature: 0.3, maxOutputTokens: 512 };
 
     const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
