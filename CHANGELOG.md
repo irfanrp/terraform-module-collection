@@ -35,16 +35,6 @@
 - docs(iam): Refactor README for IAM wrapper and OIDC provider submodule for clarity and formatting
 - docs: Enhance README with detailed S3 module features, usage examples, and input/output specifications
 
-### Other
-- update
-- update README.md
-- update all
-- update code
-- update ec2
-- update make fmt
-- update module
-- update s3 modules
-
 
 [v1.0.0]: https://github.com/irfanrp/terraform-module-collection/releases/tag/v1.0.0
 
