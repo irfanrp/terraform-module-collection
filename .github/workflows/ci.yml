@@ -191,7 +191,8 @@ jobs:
           git commit -m "chore(release): update CHANGELOG for ${GITHUB_REF#refs/tags/}" || echo "No changes to commit"
           # Create a branch and push using token
           BRANCH="changelog/${GITHUB_REF#refs/tags/}"
-          git branch -M $BRANCH
+          # We're on a detached HEAD when the workflow runs for a tag, so create a new branch from HEAD
+          git checkout -b "$BRANCH"
           git remote set-url origin https://x-access-token:${TOKEN_GITHUB}@github.com/${REPO}.git
           git push origin $BRANCH --force
 
