@@ -19,7 +19,8 @@ async function run() {
   // Use the generateContent endpoint (contents.parts) which matches the working curl you ran locally.
   const MODEL = 'gemini-2.5-flash';
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_API_KEY}`;
-  const payload = { contents: [{ parts: [{ text: prompt }] }], temperature: 0.3 };
+  // `temperature` is not accepted by the generateContent endpoint in some API versions; keep payload minimal.
+  const payload = { contents: [{ parts: [{ text: prompt }] }] };
 
   const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
   const body = await res.json();
