@@ -43,6 +43,16 @@ variable "ebs_volume_size" {
   default     = 8
 }
 
+variable "root_volume_type" {
+  description = "EBS root volume type (e.g. gp3, gp2, io1, io2, sc1, st1)"
+  type        = string
+  default     = "gp3"
+  validation {
+    condition     = contains(["gp2", "gp3", "io1", "io2", "sc1", "st1"], var.root_volume_type)
+    error_message = "root_volume_type must be one of: gp2, gp3, io1, io2, sc1, st1"
+  }
+}
+
 variable "enable_detailed_monitoring" {
   description = "Enable detailed monitoring (CloudWatch)"
   type        = bool

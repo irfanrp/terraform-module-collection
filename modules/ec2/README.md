@@ -38,6 +38,8 @@ module "ec2" {
 | ami_id | AMI ID to use for the instances | string | n/a | yes |
 | subnet_ids | List of subnet IDs where instances will be placed | list(string) | n/a | yes |
 | security_group_ids | List of security group IDs to attach | list(string) | [] | no |
+| ebs_volume_size | Root EBS volume size in GB | number | 8 | no |
+| root_volume_type | EBS root volume type (gp3, gp2, io1, io2, sc1, st1) | string | gp3 | no |
 | associate_public_ip | Whether to associate a public IP | bool | true | no |
 | create_ssm_instance_profile | Create and attach SSM instance profile for Session Manager | bool | true | no |
 | ssm_instance_profile_name | Optional name for the SSM instance profile | string | null | no |
