@@ -2,12 +2,10 @@ name: CI
 
 on:
   push:
-    branches: [ "master", "main" ]
+    branches: [ "master" ]
     tags: ['*']
   pull_request:
-    branches: [ "master", "main" ]
-  release:
-    types: [published]
+    branches: [ 'master' ]
 
 permissions:
   contents: read
