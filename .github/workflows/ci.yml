@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 jobs:
-  validate:
+  format-validate:
     name: Format & Validate
     runs-on: ubuntu-latest
     steps:
@@ -43,6 +43,7 @@ jobs:
 
   tflint:
     name: TFLint
+    needs: format-validate
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -68,6 +69,7 @@ jobs:
           path: .github/artifacts/tflint-results.xml
 
   tfsec:
+    needs: format-validate
     name: tfsec
     runs-on: ubuntu-latest
     steps:
@@ -94,6 +96,7 @@ jobs:
           path: .github/artifacts/tfsec-results.xml
 
   checkov:
+    needs: format-validate
     name: Checkov
     runs-on: ubuntu-latest
     steps:
