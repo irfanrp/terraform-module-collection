@@ -43,7 +43,7 @@ jobs:
       - name: Install deps and run PR summarizer (skips if OPENAI_API_KEY not set)
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          SECRET_GITHUB: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.TOKEN_GITHUB }}
           PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
           GITHUB_EVENT_NAME: ${{ github.event_name }}
         run: |
@@ -96,7 +96,7 @@ jobs:
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `token ${process.env.SECRET_GITHUB}`
+                'Authorization': `token ${process.env.GITHUB_TOKEN}`
               },
               body: JSON.stringify({ body: comment })
             });
