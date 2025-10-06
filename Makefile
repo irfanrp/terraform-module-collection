@@ -18,16 +18,32 @@ init: ## Initialize Terraform in all example directories
 
 validate: ## Validate Terraform configuration
 	@echo "✅ Validating Terraform configuration..."
+	@$(MAKE) init-providers
 	@for dir in examples/*; do \
 		if [ -d "$$dir" ]; then \
 			echo "Validating $$dir"; \
-			( cd "$$dir" && terraform init -backend=false > /dev/null 2>&1 || true; terraform validate ); \
+			( cd "$$dir" && terraform init -upgrade -backend=false > /dev/null 2>&1 || true; terraform validate ); \
 		fi; \
 	done
 	@for dir in modules/*/; do \
 		if [ -f "$$dir/main.tf" ]; then \
 			echo "Validating $$dir"; \
-			( cd "$$dir" && terraform init -backend=false > /dev/null 2>&1 || true; terraform validate ); \
+			( cd "$$dir" && terraform init -upgrade -backend=false > /dev/null 2>&1 || true; terraform validate ); \
+		fi; \
+	done
+
+init-providers: ## Initialize Terraform providers for examples and modules (downloads provider binaries)
+	@echo "🔄 Initializing providers for examples and modules..."
+	@for dir in examples/*/; do \
+		if [ -d "$$dir" ]; then \
+			echo "Init providers $$dir"; \
+			( cd "$$dir" && terraform init -upgrade -backend=false > /dev/null 2>&1 || true ); \
+		fi; \
+	done
+	@for dir in modules/*/; do \
+		if [ -f "$$dir/main.tf" ]; then \
+			echo "Init providers $$dir"; \
+			( cd "$$dir" && terraform init -upgrade -backend=false > /dev/null 2>&1 || true ); \
 		fi; \
 	done
 
