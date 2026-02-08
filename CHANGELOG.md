@@ -1,3 +1,23 @@
+## v2.0.0 - 2026-02-08
+
+### Added
+- feat: Add ACM certificate module with DNS validation, inputs, outputs, and usage examples
+- feat: Add new variables for EC2 Spot instances and private IP configuration
+- feat: Add root volume type variable with validation to EC2 module
+- feat: Enhance RDS wrapper module with comprehensive README, inputs, and outputs; add example usage
+- feat: Implement AWS Security Groups module with dynamic ingress/egress rules and comprehensive README
+- feat: Update RDS module to support subnet IDs for DB subnet group; enhance outputs and add new variables
+
+### Changed
+- chore: Format CORS rules and tags in S3 module README for improved readability
+- chore: Format code in ACM certificate module for improved readability
+- chore: Format code in RDS module for improved readability
+- chore: Revise EC2 module README for clarity and conciseness
+
+
+[v1.0.0...v2.0.0]: https://github.com/irfanrp/terraform-module-collection/compare/v1.0.0...v2.0.0
+[v2.0.0]: https://github.com/irfanrp/terraform-module-collection/releases/tag/v2.0.0
+
 ## v1.0.0 - 2025-10-05
 
 ### Added
