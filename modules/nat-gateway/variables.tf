@@ -31,9 +31,3 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
-
-variable "depends_on" {
-  description = "List of resources that the NAT Gateway depends on (e.g., Internet Gateway)"
-  type        = list(any)
-  default     = []
-}

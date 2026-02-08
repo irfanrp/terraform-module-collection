@@ -51,20 +51,19 @@ resource "aws_db_proxy" "this" {
   tags = var.tags
 }
 
-resource "aws_db_proxy_target_group" "this" {
+resource "aws_db_proxy_default_target_group" "this" {
   count = var.create_proxy ? 1 : 0
 
-  name          = "${var.identifier}-target-group"
   db_proxy_name = aws_db_proxy.this[0].name
 }
 
 resource "aws_db_proxy_target" "this" {
   count = var.create_proxy ? 1 : 0
 
-  db_proxy_name         = aws_db_proxy.this[0].name
-  target_arn            = aws_db_instance.this.arn
-  target_group_name     = aws_db_proxy_target_group.this[0].name
-  db_cluster_identifier = null
+  target_group_name      = aws_db_proxy_default_target_group.this[0].name
+  db_proxy_name          = aws_db_proxy.this[0].name
+  target_arn             = aws_db_instance.this.arn
+  db_instance_identifier = aws_db_instance.this.id
 }
 
 # Secrets Manager Secret for RDS Proxy

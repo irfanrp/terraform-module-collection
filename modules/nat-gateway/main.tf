@@ -11,8 +11,6 @@ resource "aws_eip" "this" {
     }
   )
 
-  depends_on = var.depends_on
-
   lifecycle {
     create_before_destroy = true
   }
@@ -29,8 +27,6 @@ resource "aws_nat_gateway" "this" {
       Name = var.name
     }
   )
-
-  depends_on = var.depends_on
 
   lifecycle {
     create_before_destroy = true
