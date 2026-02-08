@@ -37,8 +37,8 @@ resource "aws_db_instance" "this" {
 resource "aws_db_proxy" "this" {
   count = var.create_proxy ? 1 : 0
 
-  name                   = "${var.identifier}-proxy"
-  engine_family          = upper(var.engine) == "POSTGRES" ? "POSTGRESQL" : upper(var.engine)
+  name          = "${var.identifier}-proxy"
+  engine_family = upper(var.engine) == "POSTGRES" ? "POSTGRESQL" : upper(var.engine)
   auth {
     auth_scheme = "SECRETS"
     secret_arn  = aws_secretsmanager_secret.db_secret[0].arn
@@ -61,10 +61,10 @@ resource "aws_db_proxy_target_group" "this" {
 resource "aws_db_proxy_target" "this" {
   count = var.create_proxy ? 1 : 0
 
-  db_proxy_name          = aws_db_proxy.this[0].name
-  target_arn             = aws_db_instance.this.arn
-  target_group_name      = aws_db_proxy_target_group.this[0].name
-  db_cluster_identifier  = null
+  db_proxy_name         = aws_db_proxy.this[0].name
+  target_arn            = aws_db_instance.this.arn
+  target_group_name     = aws_db_proxy_target_group.this[0].name
+  db_cluster_identifier = null
 }
 
 # Secrets Manager Secret for RDS Proxy
@@ -90,7 +90,7 @@ resource "aws_secretsmanager_secret_version" "db_secret" {
 resource "aws_iam_role" "proxy_role" {
   count = var.create_proxy ? 1 : 0
 
-  name               = "${var.identifier}-proxy-role"
+  name = "${var.identifier}-proxy-role"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [

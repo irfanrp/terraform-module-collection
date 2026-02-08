@@ -15,28 +15,28 @@ output "internet_gateway_id" {
 
 output "public_subnet_ids" {
   description = "IDs of public subnets"
-  value       = {
+  value = {
     for az, subnet in module.public_subnets : az => subnet.subnet_id
   }
 }
 
 output "private_subnet_ids" {
   description = "IDs of private subnets"
-  value       = {
+  value = {
     for az, subnet in module.private_subnets : az => subnet.subnet_id
   }
 }
 
 output "nat_gateway_ids" {
   description = "NAT Gateway IDs per AZ"
-  value       = {
+  value = {
     for az, nat in module.nat_gateways : az => nat.nat_gateway_id
   }
 }
 
 output "nat_gateway_ips" {
   description = "Public IPs of NAT Gateways per AZ"
-  value       = {
+  value = {
     for az, nat in module.nat_gateways : az => nat.nat_gateway_public_ip
   }
 }
@@ -48,7 +48,7 @@ output "public_route_table_id" {
 
 output "private_route_table_ids" {
   description = "Private Route Table IDs per AZ"
-  value       = {
+  value = {
     for az, rt in aws_route_table.private : az => rt.id
   }
 }

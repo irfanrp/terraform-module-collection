@@ -94,7 +94,7 @@ resource "aws_s3_bucket_versioning" "this" {
 }
 
 locals {
-  s3_bucket_arn     = var.create_s3_bucket ? aws_s3_bucket.this[0].arn : var.existing_s3_bucket_arn
+  s3_bucket_arn      = var.create_s3_bucket ? aws_s3_bucket.this[0].arn : var.existing_s3_bucket_arn
   ecr_repository_url = var.create_ecr_repository ? aws_ecr_repository.this[0].repository_url : null
   container_image    = var.container_image != null ? var.container_image : (local.ecr_repository_url != null ? "${local.ecr_repository_url}:${var.ecr_image_tag}" : null)
 }

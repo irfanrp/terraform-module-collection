@@ -223,7 +223,7 @@ variable "s3_bucket_permissions" {
   description = "S3 permissions for ECS task (read, write, or both)"
   type        = string
   default     = "read"
-  
+
   validation {
     condition     = contains(["read", "write", "both"], var.s3_bucket_permissions)
     error_message = "S3 permissions must be 'read', 'write', or 'both'."
