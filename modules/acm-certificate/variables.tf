@@ -50,3 +50,4 @@ variable "for_cloudfront" {
   type        = bool
   default     = false
 }
+

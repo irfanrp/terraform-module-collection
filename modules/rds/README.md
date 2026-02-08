@@ -1,57 +1,66 @@
-# RDS wrapper module
+# RDS Module
 
-Lightweight wrapper to provision an RDS instance (MySQL/Postgres/MariaDB) using sensible defaults. This README is concise — use the examples in `examples/` for full configurations.
+Simple RDS instance provisioning for MySQL, Postgres, and MariaDB with optional RDS Proxy support.
 
-## Quick usage
+## Quick Usage
+
 ```hcl
 module "rds" {
-  source = "./modules/rds"
+  source = "../../modules/rds"
 
-  identifier = "my-database"
-  engine     = "postgres"
-  engine_version = "15"
-
+  identifier       = "mydb"
+  engine           = "postgres"
+  instance_class   = "db.t3.micro"
   allocated_storage = 20
-  instance_class    = "db.t3.micro"
 
-  db_name  = "myapp"
   username = "admin"
   password = var.db_password
 
-  vpc_security_group_ids = [module.sg.security_group_id]
-  # Either pass an existing DB subnet group name, or provide subnet IDs and the module will create a DB subnet group
-  # db_subnet_group_name   = module.vpc.database_subnet_group_name
-  db_subnet_ids = module.vpc.private_subnet_ids
+  vpc_security_group_ids = [aws_security_group.db.id]
+  db_subnet_ids          = [aws_subnet.private_1.id, aws_subnet.private_2.id]
 
-  tags = {
-    Environment = "dev"
-  }
+  tags = { Environment = "dev" }
 }
 ```
 
-## Inputs
-| Name | Description | Type | Default | Required |
-|------|-------------|:----:|:-------:|:--------:|
-| identifier | RDS identifier (base name) | string | n/a | yes |
-| engine | Database engine (postgres, mysql, mariadb) | string | n/a | yes |
-| engine_version | Optional engine version | string | null | no |
-| allocated_storage | Allocated storage (GB) | number | 20 | no |
-| instance_class | RDS instance class | string | "db.t3.micro" | no |
-| db_name | Initial database name | string | null | no |
-| username | Master username | string | null | no |
-| password | Master password | string | null | no |
-| vpc_security_group_ids | Security groups to attach | list(string) | [] | no |
-| db_subnet_group_name | DB subnet group name | string | null | no |
-| backup_retention_period | Days to retain backups | number | 7 | no |
-| backup_window | Preferred backup window | string | null | no |
-| maintenance_window | Preferred maintenance window | string | null | no |
-| tags | Tags to apply to resources | map(string) | {} | no |
+## With RDS Proxy
+
+```hcl
+module "rds" {
+  source = "../../modules/rds"
+
+  identifier = "mydb"
+  engine     = "postgres"
+  username   = "admin"
+  password   = var.db_password
+
+  create_proxy              = true
+  proxy_vpc_subnet_ids      = [aws_subnet.private_1.id, aws_subnet.private_2.id]
+  proxy_vpc_security_group_ids = [aws_security_group.proxy.id]
+
+  tags = { Environment = "dev" }
+}
+```
+
+## Variables
+
+- `identifier` - RDS identifier (required)
+- `engine` - Database engine: postgres, mysql, mariadb (required)
+- `instance_class` - Instance class (default: db.t3.micro)
+- `allocated_storage` - Storage in GB (default: 20)
+- `username` - Master username
+- `password` - Master password
+- `vpc_security_group_ids` - Security groups for DB
+- `db_subnet_ids` - Subnet IDs for DB subnet group
+- `create_proxy` - Enable RDS Proxy (default: false)
+- `proxy_vpc_subnet_ids` - Subnets for RDS Proxy (required if create_proxy=true)
+- `proxy_vpc_security_group_ids` - Security groups for RDS Proxy
+- `tags` - Resource tags
 
 ## Outputs
-| Name | Description |
-|------|-------------|
-| endpoint | The RDS endpoint address |
-| port | The database port |
-| id | The RDS DB instance id |
 
-For advanced setups (read replicas, option groups, parameter groups), wire the underlying resources or see `examples/` for extended patterns.
+- `endpoint` - RDS endpoint address
+- `port` - Database port
+- `id` - RDS instance ID
+- `proxy_endpoint` - RDS Proxy endpoint (if enabled)
+- `proxy_port` - RDS Proxy port (if enabled)
