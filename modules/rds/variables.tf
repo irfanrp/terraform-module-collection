@@ -92,6 +92,36 @@ variable "maintenance_window" {
   default     = null
 }
 
+variable "create_proxy" {
+  description = "Enable RDS Proxy"
+  type        = bool
+  default     = false
+}
+
+variable "proxy_vpc_subnet_ids" {
+  description = "VPC subnet IDs for RDS Proxy (required if create_proxy is true)"
+  type        = list(string)
+  default     = []
+}
+
+variable "proxy_vpc_security_group_ids" {
+  description = "Security group IDs for RDS Proxy"
+  type        = list(string)
+  default     = []
+}
+
+variable "proxy_max_connections" {
+  description = "Maximum number of client connections to proxy"
+  type        = number
+  default     = 100
+}
+
+variable "proxy_max_idle_connections" {
+  description = "Maximum number of idle connections to DB"
+  type        = number
+  default     = 50
+}
+
 variable "tags" {
   description = "Tags to apply to resources"
   type        = map(string)

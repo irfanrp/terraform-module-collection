@@ -7,7 +7,7 @@ resource "aws_acm_certificate" "this" {
 
 resource "aws_acm_certificate" "us_east" {
   count                     = var.for_cloudfront ? 1 : 0
-  provider                  = aws.use_east_1
+  provider                  = aws.us_east_1
   domain_name               = var.domain_name
   subject_alternative_names = var.subject_alternative_names
   validation_method         = var.validation_method
@@ -43,7 +43,7 @@ resource "aws_acm_certificate_validation" "this" {
 
 resource "aws_acm_certificate_validation" "us_east" {
   count                   = var.for_cloudfront && var.validation_method == "DNS" ? 1 : 0
-  provider                = aws.use_east_1
+  provider                = aws.us_east_1
   certificate_arn         = aws_acm_certificate.us_east[0].arn
   validation_record_fqdns = var.create_route53_records && local.hosted_zone_id != null ? aws_route53_record.validation[*].fqdn : []
 }
